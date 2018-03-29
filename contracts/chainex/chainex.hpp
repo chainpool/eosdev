@@ -19,6 +19,10 @@ public:
   void transfer(account_name from, account_name to, asset quantity,
                 string memo);
 
+  void deposit(account_name from, extended_asset quantity);
+
+  void withdraw(account_name from, extended_asset quantity);
+
 private:
   struct account {
     asset balance;

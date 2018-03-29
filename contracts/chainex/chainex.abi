@@ -7,6 +7,20 @@
   ], 
   "structs": [
     {
+      "name": "extended_asset", 
+      "base": "", 
+      "fields": [
+        {
+          "name": "quantity", 
+          "type": "asset"
+        }, 
+        {
+          "name": "contract", 
+          "type": "account_name"
+        }
+      ]
+    }, 
+    {
       "name": "transfer", 
       "base": "", 
       "fields": [
@@ -97,6 +111,34 @@
         {
           "name": "supply", 
           "type": "uint64"
+        }
+      ]
+    }, 
+    {
+      "name": "deposit", 
+      "base": "", 
+      "fields": [
+        {
+          "name": "from", 
+          "type": "account_name"
+        }, 
+        {
+          "name": "quantity", 
+          "type": "extended_asset"
+        }
+      ]
+    }, 
+    {
+      "name": "withdraw", 
+      "base": "", 
+      "fields": [
+        {
+          "name": "from", 
+          "type": "account_name"
+        }, 
+        {
+          "name": "quantity", 
+          "type": "extended_asset"
         }
       ]
     }
