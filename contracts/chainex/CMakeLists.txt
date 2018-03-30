@@ -6,3 +6,5 @@ add_wast_executable(TARGET chainex
   LIBRARIES libc++ libc eosiolib
   DESTINATION_FOLDER ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+add_dependencies(chainex eosio.token)

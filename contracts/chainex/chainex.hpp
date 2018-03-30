@@ -1,58 +1,28 @@
-#include <eosiolib/asset.hpp>
-#include <eosiolib/eosio.hpp>
 #include <string>
+
+#include "eosiolib/asset.hpp"
+#include "eosiolib/eosio.hpp"
+#include "eosio.token/eosio.token.hpp"
 
 namespace eosio {
 
 using std::string;
 
-class chainex : public contract {
+class chainex : public token {
 public:
-  chainex(account_name self) : contract(self) {}
-
-  void create(account_name issuer, asset maximum_supply,
-              uint8_t issuer_can_freeze, uint8_t issuer_can_recall,
-              uint8_t issuer_can_whitelist);
-
-  void issue(account_name to, asset quantity, string memo);
-
-  void transfer(account_name from, account_name to, asset quantity,
-                string memo);
+  chainex(account_name self):_this_contract(self),_extokens(self),_accounts(self){}
 
   void deposit(account_name from, extended_asset quantity);
 
   void withdraw(account_name from, extended_asset quantity);
 
-  void createx(account_name creator, asset initial_supply, uint32_t fee, extended_asset base_deposit, extended_asset quote_deposit);
+  void createx(account_name creator, asset initial_supply, uint32_t fee,
+               extended_asset base_deposit, extended_asset quote_deposit);
 
 private:
-  struct account {
-    asset balance;
-    bool frozen = false;
-    bool whitelist = true;
-
-    uint64_t primary_key() const { return balance.symbol; }
-  };
-
-  struct currency_stats {
-    asset supply;
-    asset max_supply;
-    account_name issuer;
-    bool can_freeze = true;
-    bool can_recall = true;
-    bool can_whitelist = true;
-    bool is_frozen = false;
-    bool enforce_whitelist = false;
-
-    uint64_t primary_key() const { return supply.symbol.name(); }
-  };
-
-  typedef eosio::multi_index<N(accounts), account> accounts;
-  typedef eosio::multi_index<N(stat), currency_stats> stats;
-
-  void sub_balance(account_name owner, asset value, const currency_stats &st);
-  void add_balance(account_name owner, asset value, const currency_stats &st,
-                   account_name ram_payer);
+  account_name _this_contract;
+  token _extokens;
+  chainex_accounts _accounts;
 };
 
 } // namespace eosio
