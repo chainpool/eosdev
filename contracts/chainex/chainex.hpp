@@ -16,8 +16,9 @@ public:
 
   void withdraw(account_name from, extended_asset quantity);
 
-  void createx(account_name creator, asset initial_supply, uint32_t fee,
-               extended_asset base_deposit, extended_asset quote_deposit);
+  void trade(account_name name, string side, uint128 price, string symbol, uint64 quantity, time expiration);
+
+  void cancel_order(account_name name, string id);
 
 private:
   account_name _this_contract;

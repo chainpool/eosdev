@@ -141,30 +141,66 @@
           "type": "extended_asset"
         }
       ]
-    }
+    },
     {
-      "name": "createx",
+      "name": "trade",
       "base": "",
       "fields": [
         {
-          "name": "creator",
+          "name": "name",
           "type": "account_name"
         },
         {
-          "name": "initial_supply",
-          "type": "asset"
+          "name": "side",
+          "type": "string"
         },
         {
-          "name": "fee",
-          "type": "uint32"
+          "name": "price",
+          "type": "uint128"
         },
         {
-          "name": "base_deposit",
-          "type": "extended_asset"
+          "name": "symbol",
+          "type": "string"
         },
         {
-          "name": "quote_deposit",
-          "type": "extended_asset"
+          "name": "quantity",
+          "type": "uint64"
+        },
+        {
+          "name": "expiration",
+          "type": "time"
+        }
+      ]
+    },
+    {
+      "name": "cancel_order",
+      "base": "",
+      "fields":[
+        {
+          "name": "name",
+          "type": "account_name"
+        },
+        {
+          "name": "id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "order_book",
+      "base": "",
+      "fields": [
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "type": "uint128"
+        },
+        {
+          "name": "quantity",
+          "type": "uint64"
         }
       ]
     }
@@ -187,16 +223,16 @@
       "type": "deposit"
     }, 
     {
-      "name": "witidraw", 
+      "name": "withdraw", 
       "type": "withdraw"
-    }, 
-    {
-      "name": "createx", 
-      "type": "createx"
     },
     {
       "name": "trade", 
       "type": "trade"
+    },
+    {
+      "name": "cancel_order",
+      "type": "cancel_order"
     }
   ], 
   "tables": [
@@ -206,13 +242,27 @@
       "index_type": "i64", 
       "key_names": ["currency"], 
       "key_types": ["uint64"]
-    }, 
+    },
     {
       "name": "stat", 
       "type": "currency_stats", 
       "index_type": "i64", 
       "key_names": ["currency"], 
       "key_types": ["uint64"]
+    },
+    {
+      "name": "bids",
+      "type": "order_book",
+      "index_type": "string",
+      "key_names": ["symbol"],
+      "key_types": ["string"]
+    },
+    {
+      "name": "asks",
+      "type": "order_book",
+      "index_type": "string",
+      "key_names": ["symbol"],
+      "key_types": ["string"]
     }
   ]
 }
