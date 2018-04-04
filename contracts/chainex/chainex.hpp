@@ -24,6 +24,33 @@ private:
   account_name _this_contract;
   token _extokens;
   chainex_accounts _accounts;
+
+  struct market_order {
+    uint128 price; // original price * 10000
+    uint64 quantity; // original quantity * 100
+  };
+
+  // TODO: add expire time to each account, can be configured
+  struct full_orderbook {
+    string symbol; // <quote>_<base>, exchange pair. e.g. EOS_USD
+    std::vector<market_order> asks;
+    std::vector<market_order> bids;
+    string primary_key() const {
+      return symbol;
+    }
+  };
+
+  struct active_orderbook {
+    string symbol;
+    std::vector<market_order> asks;
+    std::vector<market_order> bids;
+    string primary_key() const {
+      return symbol;
+    }
+  };
+
+    typedef eosio::multi_index<N(full_orderbook), full_orderbook> full_orderbooks;
+    typedef eosio::multi_index<N(active_orderbook), active_orderbook> active_orderbooks;
 };
 
 } // namespace eosio

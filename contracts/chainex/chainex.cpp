@@ -19,7 +19,11 @@ void chainex::withdraw(account_name from, extended_asset quantity) {
 
 void chainex::trade(account_name name, string side, uint128 price, string symbol, uint64 quantity, time expiration) {
   require_auth(name);
+  // get symbol order book
   
+  // order match
+  // if not matched, add to order book
+  // if matched, manage order, fee and account balance
 }
 
 void chainex::cancel_order(account_name name, string id) {
