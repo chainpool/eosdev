@@ -159,8 +159,12 @@
           "type": "uint128"
         },
         {
-          "name": "symbol",
-          "type": "string"
+          "name": "quote",
+          "type": "extended_symbol"
+        },
+        {
+          "name": "base",
+          "type": "extended_symbol"
         },
         {
           "name": "quantity",
@@ -182,7 +186,7 @@
         },
         {
           "name": "id",
-          "type": "string"
+          "type": "uint64_t"
         }
       ]
     },
@@ -191,8 +195,12 @@
       "base": "",
       "fields": [
         {
-          "name": "symbol",
-          "type": "string"
+          "name": "quote",
+          "type": "extended_symbol"
+        },
+        {
+          "name": "base",
+          "type": "extended_symbol"
         },
         {
           "name": "price",
@@ -253,16 +261,16 @@
     {
       "name": "bids",
       "type": "order_book",
-      "index_type": "string",
-      "key_names": ["symbol"],
-      "key_types": ["string"]
+      "index_type": "i64",
+      "key_names": ["base"],
+      "key_types": ["uint64"]
     },
     {
       "name": "asks",
       "type": "order_book",
-      "index_type": "string",
-      "key_names": ["symbol"],
-      "key_types": ["string"]
+      "index_type": "i64",
+      "key_names": ["base"],
+      "key_types": ["uint64"]
     }
   ]
 }

@@ -6,8 +6,8 @@ namespace eosio {
 using boost::container::flat_map;
 
 /**
- *  Each user has their own account with the exchange contract that keeps track
- *  of how much a user has on deposit for each extended asset type. The
+ * Each user has their own account with the exchange contract that keeps track
+ * of how much a user has on deposit for each extended asset type. The
  * assumption is that storing a single flat map of all balances for a particular
  * user will be more practical than breaking this down into a multi-index table
  * sorted by the extended_symbol.
@@ -23,8 +23,8 @@ struct exaccount {
 typedef eosio::multi_index<N(exaccounts), exaccount> exaccounts;
 
 /**
- *  Provides an abstracted interface around storing balances for users. This
- * class caches tables to make multiple accesses effecient.
+ * Provides an abstracted interface around storing balances for users. This
+ * class caches tables to make multiple accesses efficient.
  */
 struct chainex_accounts {
   chainex_accounts(account_name code) : _this_contract(code) {}
