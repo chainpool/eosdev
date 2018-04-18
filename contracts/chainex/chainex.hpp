@@ -1,8 +1,10 @@
 #include <string>
+#include <vector>
 
 #include "eosiolib/asset.hpp"
 #include "eosiolib/eosio.hpp"
 #include "eosio.token/eosio.token.hpp"
+#include "chainex/chainex_accounts.hpp"
 
 namespace eosio {
 
@@ -10,13 +12,15 @@ using std::string;
 
 class chainex : public token {
  public:
-  chainex(account_name self) : _this_contract(self), _extokens(self), _accounts(self) {}
+  chainex(account_name self) : token(self), _this_contract(self), _extokens(self), _accounts(self) {}
 
   void deposit(account_name from, extended_asset quantity);
 
   void withdraw(account_name from, extended_asset quantity);
 
-  void trade(account_name name, string side, uint128 price, string symbol, uint64 quantity, time expiration);
+  void trade(account_name name, std::string side, uint64_t price,
+             extended_symbol quote, extended_symbol base,
+             int64_t quantity, time expiration);
 
   void cancel_order(account_name name, uint64_t id);
 
@@ -29,8 +33,9 @@ class chainex : public token {
     extended_symbol quote;
     extended_symbol base;
     uint64_t price; // original price * 10000
-    uint64_t quantity; // original quantity * 100
+    int64_t quantity; // original quantity * 100
     account_name name;
+    std::string status; // new/filled/partially_filled/canceled/expired
     time expiration;
     time created_at; // delete too old orders according to created_at time
     uint64_t id; // order id

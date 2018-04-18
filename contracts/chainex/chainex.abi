@@ -1,10 +1,5 @@
 {
-  "types": [
-    {
-      "new_type_name": "account_name", 
-      "type": "name"
-    }
-  ], 
+  "types": [],
   "structs": [
     {
       "name": "extended_asset", 
@@ -168,7 +163,7 @@
         },
         {
           "name": "quantity",
-          "type": "uint64"
+          "type": "int64"
         },
         {
           "name": "expiration",
@@ -177,37 +172,15 @@
       ]
     },
     {
-      "name": "cancel_order",
+      "name": "trade",
       "base": "",
-      "fields":[
+      "fields": [
         {
           "name": "name",
           "type": "account_name"
         },
         {
           "name": "id",
-          "type": "uint64_t"
-        }
-      ]
-    },
-    {
-      "name": "order_book",
-      "base": "",
-      "fields": [
-        {
-          "name": "quote",
-          "type": "extended_symbol"
-        },
-        {
-          "name": "base",
-          "type": "extended_symbol"
-        },
-        {
-          "name": "price",
-          "type": "uint128"
-        },
-        {
-          "name": "quantity",
           "type": "uint64"
         }
       ]
@@ -217,15 +190,15 @@
     {
       "name": "transfer", 
       "type": "transfer"
-    }, 
+    },
     {
       "name": "issue", 
       "type": "issue"
-    }, 
+    },
     {
       "name": "create", 
       "type": "create"
-    }, 
+    },
     {
       "name": "deposit", 
       "type": "deposit"
@@ -235,7 +208,7 @@
       "type": "withdraw"
     },
     {
-      "name": "trade", 
+      "name": "trade",
       "type": "trade"
     },
     {
@@ -257,20 +230,7 @@
       "index_type": "i64", 
       "key_names": ["currency"], 
       "key_types": ["uint64"]
-    },
-    {
-      "name": "bids",
-      "type": "order_book",
-      "index_type": "i64",
-      "key_names": ["base"],
-      "key_types": ["uint64"]
-    },
-    {
-      "name": "asks",
-      "type": "order_book",
-      "index_type": "i64",
-      "key_names": ["base"],
-      "key_types": ["uint64"]
     }
-  ]
+  ],
+  "ricardian_clauses": []
 }

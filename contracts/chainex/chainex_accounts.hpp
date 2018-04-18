@@ -14,10 +14,10 @@ using boost::container::flat_map;
  */
 struct exaccount {
   account_name owner;
-  flat_map<extended_symbol, int64_t> balances;
+  flat_map <extended_symbol, int64_t> balances;
 
   uint64_t primary_key() const { return owner; }
-  EOSLIB_SERIALIZE( \exaccount, (owner)(balances))
+  EOSLIB_SERIALIZE(exaccount, (owner)(balances))
 };
 
 typedef eosio::multi_index<N(exaccounts), exaccount> exaccounts;
@@ -32,11 +32,11 @@ struct chainex_accounts {
   void adjust_balance(account_name owner, extended_asset delta,
                       const string &reason = string());
 
-private:
+ private:
   account_name _this_contract;
   /**
    *  Keep a cache of all accounts tables we access
    */
-  flat_map<account_name, exaccounts> exaccounts_cache;
+  flat_map <account_name, exaccounts> exaccounts_cache;
 };
 } // namespace eosio

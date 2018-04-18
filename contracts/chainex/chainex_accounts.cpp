@@ -1,14 +1,14 @@
-#include "chainex_accounts.hpp"
+#include "chainex/chainex_accounts.hpp"
 
 namespace eosio {
 void chainex_accounts::adjust_balance(account_name owner, extended_asset delta,
                                       const string &reason) {
-  (void)reason;
+  (void) reason;
 
   auto table = exaccounts_cache.find(owner);
   if (table == exaccounts_cache.end()) {
     table = exaccounts_cache.emplace(owner, exaccounts(_this_contract, owner))
-                .first;
+        .first;
   }
   auto useraccounts = table->second.find(owner);
   if (useraccounts == table->second.end()) {
