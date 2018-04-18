@@ -172,7 +172,7 @@
       ]
     },
     {
-      "name": "trade",
+      "name": "cancelorder",
       "base": "",
       "fields": [
         {
@@ -212,8 +212,8 @@
       "type": "trade"
     },
     {
-      "name": "cancel_order",
-      "type": "cancel_order"
+      "name": "cancelorder",
+      "type": "cancelorder"
     }
   ], 
   "tables": [
