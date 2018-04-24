@@ -3,20 +3,23 @@
 
 namespace eosio {
 
+// @abi action
 void chainex::deposit(account_name from, extended_asset quantity) {
   eosio_assert(quantity.is_valid(), "invalid quantity");
-  token::transfer(from, _this_contract, quantity, "deposit");
+  token::inline_transfer(from, _this_contract, quantity, "deposit");
   _accounts.adjust_balance(from, quantity, "deposit");
 }
 
+// @abi action
 void chainex::withdraw(account_name from, extended_asset quantity) {
   require_auth(from);
   eosio_assert(quantity.is_valid(), "invalid quantity");
   eosio_assert(quantity.amount >= 0, "cannot withdraw negative balance");
-  _accounts.adjust_balance(from, -quantity);
-  token::transfer(_this_contract, from, quantity, "withdraw");
+  _accounts.adjust_balance(from, -quantity, "withdraw");
+  token::inline_transfer(_this_contract, from, quantity, "withdraw");
 }
 
+/*
 void chainex::trade(account_name name, std::string side, uint64_t price,
                     extended_symbol quote, extended_symbol base,
                     int64_t quantity, time expiration) {
@@ -299,12 +302,15 @@ void chainex::trade(account_name name, std::string side, uint64_t price,
   });
 }
 
+// @abi action
 void chainex::cancel_order(account_name name, uint64_t id) {
   std::ignore = id;
   require_auth(name);
 }
+*/
 
 } // namespace eosio
 
-EOSIO_ABI(eosio::chainex, (deposit)(withdraw)(trade)(cancel_order)
-)
+// EOSIO_ABI(eosio::chainex, (deposit)(withdraw)(trade)(cancel_order))
+
+EOSIO_ABI(eosio::chainex, (deposit)(withdraw))

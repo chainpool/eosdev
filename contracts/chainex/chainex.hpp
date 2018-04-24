@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <vector>
 
@@ -29,7 +30,8 @@ class chainex : public token {
   token _extokens;
   chainex_accounts _accounts;
 
-  struct market_order {
+  // @abi table marketorder i64
+  struct marketorder {
     extended_symbol quote;
     extended_symbol base;
     uint64_t price; // original price * 10000
@@ -44,11 +46,12 @@ class chainex : public token {
     }
   };
 
+  // @abi table orderbook i64
   struct orderbook {
     extended_symbol quote;
     extended_symbol base;
-    std::vector <market_order> asks;
-    std::vector <market_order> bids;
+    std::vector <marketorder> asks;
+    std::vector <marketorder> bids;
     uint64_t primary_key() const {
       return quote.name();
     }

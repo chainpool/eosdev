@@ -1,8 +1,9 @@
 #include "chainex/chainex_accounts.hpp"
 
 namespace eosio {
+
 void chainex_accounts::adjust_balance(account_name owner, extended_asset delta,
-                                      const string &reason) {
+                                      const std::string &reason) {
   (void) reason;
 
   auto table = exaccounts_cache.find(owner);
@@ -24,4 +25,5 @@ void chainex_accounts::adjust_balance(account_name owner, extended_asset delta,
     });
   }
 }
+
 } // namespace eosio

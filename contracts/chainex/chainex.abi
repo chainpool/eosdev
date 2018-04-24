@@ -86,12 +86,16 @@
       "base": "", 
       "fields": [
         {
-          "name": "currency", 
-          "type": "uint64"
+          "name": "balance", 
+          "type": "asset"
         }, 
         {
-          "name": "balance", 
-          "type": "uint64"
+          "name": "frozen", 
+          "type": "uint8"
+        },
+        {
+          "name": "whitelist",
+          "type": "uint8"
         }
       ]
     }, 
@@ -100,12 +104,36 @@
       "base": "", 
       "fields": [
         {
-          "name": "currency", 
-          "type": "uint64"
+          "name": "supply", 
+          "type": "asset"
         }, 
         {
-          "name": "supply", 
-          "type": "uint64"
+          "name": "max_supply", 
+          "type": "asset"
+        },
+        {
+          "name": "issuer", 
+          "type": "account_name"
+        },
+        {
+          "name": "can_freeze", 
+          "type": "uint8"
+        },
+        {
+          "name": "can_recall", 
+          "type": "uint8"
+        },
+        {
+          "name": "can_whitelist", 
+          "type": "uint8"
+        },
+        {
+          "name": "is_frozen", 
+          "type": "uint8"
+        },
+        {
+          "name": "enforce_whitelist", 
+          "type": "uint8"
         }
       ]
     }, 
@@ -134,54 +162,6 @@
         {
           "name": "quantity", 
           "type": "extended_asset"
-        }
-      ]
-    },
-    {
-      "name": "trade",
-      "base": "",
-      "fields": [
-        {
-          "name": "name",
-          "type": "account_name"
-        },
-        {
-          "name": "side",
-          "type": "string"
-        },
-        {
-          "name": "price",
-          "type": "uint64"
-        },
-        {
-          "name": "quote",
-          "type": "extended_symbol"
-        },
-        {
-          "name": "base",
-          "type": "extended_symbol"
-        },
-        {
-          "name": "quantity",
-          "type": "int64"
-        },
-        {
-          "name": "expiration",
-          "type": "time"
-        }
-      ]
-    },
-    {
-      "name": "cancelorder",
-      "base": "",
-      "fields": [
-        {
-          "name": "name",
-          "type": "account_name"
-        },
-        {
-          "name": "id",
-          "type": "uint64"
         }
       ]
     }
@@ -189,36 +169,33 @@
   "actions": [
     {
       "name": "transfer", 
-      "type": "transfer"
+      "type": "transfer",
+      "ricardian_contract": ""
     },
     {
       "name": "issue", 
-      "type": "issue"
+      "type": "issue",
+      "ricardian_contract": ""
     },
     {
       "name": "create", 
-      "type": "create"
+      "type": "create",
+      "ricardian_contract": ""
     },
     {
       "name": "deposit", 
-      "type": "deposit"
+      "type": "deposit",
+      "ricardian_contract": ""
     }, 
     {
       "name": "withdraw", 
-      "type": "withdraw"
-    },
-    {
-      "name": "trade",
-      "type": "trade"
-    },
-    {
-      "name": "cancelorder",
-      "type": "cancelorder"
+      "type": "withdraw",
+      "ricardian_contract": ""
     }
   ], 
   "tables": [
     {
-      "name": "account", 
+      "name": "accounts", 
       "type": "account", 
       "index_type": "i64", 
       "key_names": ["currency"], 

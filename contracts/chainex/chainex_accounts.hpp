@@ -12,6 +12,7 @@ using boost::container::flat_map;
  * user will be more practical than breaking this down into a multi-index table
  * sorted by the extended_symbol.
  */
+// @abi table exaccount i64
 struct exaccount {
   account_name owner;
   flat_map <extended_symbol, int64_t> balances;
@@ -30,7 +31,7 @@ struct chainex_accounts {
   chainex_accounts(account_name code) : _this_contract(code) {}
 
   void adjust_balance(account_name owner, extended_asset delta,
-                      const string &reason = string());
+                      const std::string &reason = std::string());
 
  private:
   account_name _this_contract;

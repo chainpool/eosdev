@@ -80,7 +80,6 @@ void token::transfer( account_name from,
     add_balance( to, quantity, st, from );
 }
 
-
 void token::sub_balance( account_name owner, asset value, const currency_stats& st ) {
    accounts from_acnts( _self, owner );
 

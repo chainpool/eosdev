@@ -31,6 +31,19 @@ namespace eosio {
                         asset        quantity,
                         string       memo );
 
+          static void inline_transfer(account_name from, account_name to, extended_asset quantity, string memo = string(), permission_name perm = N(active)) {
+              action act(permission_level(from, perm), quantity.contract, N(transfer), transfer_t{from, to, quantity, memo});
+              act.send();
+          }
+
+          struct transfer_t {
+            account_name from;
+            account_name to;
+            asset        quantity;
+            string       memo;
+
+            EOSLIB_SERIALIZE( transfer_t, (from)(to)(quantity)(memo) )
+          };
 
       private:
          struct account {
