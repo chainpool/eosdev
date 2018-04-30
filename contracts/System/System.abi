@@ -1,0 +1,186 @@
+{
+  "types": [],
+  "structs": [{
+      "name": "nonce",
+       "base": "",
+       "fields": [
+          {"name":"value", "type":"string"}
+      ]
+    },{
+      "name": "set_producers",
+      "base": "",
+      "fields": [
+        {"name":"version",    "type":"uint32"},
+        {"name":"producers",   "type":"producer_key[]"}
+      ]
+    },{
+      "name": "unset_producers",
+      "base": "",
+      "fields": [
+        {"name":"user",      "type":"account_name"},
+      ]
+    },{
+      "name": "producer_key",
+      "base": "",
+      "fields": [
+        {"name":"producer_name",      "type":"account_name"},
+        {"name":"block_signing_key",  "type":"public_key"}
+      ]
+    },{
+      "name": "bond",
+      "base": "",
+      "fields": [
+         {"name":"acc", "type":"account_name"},
+         {"name":"token", "type":"asset"}
+      ]
+    },{
+      "name": "unbond",
+      "base": "",
+      "fields": [
+         {"name":"acc", "type":"account_name"},
+         {"name":"token", "type":"asset"}
+      ]
+    },{
+      "name": "total_resources",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"},
+         {"name":"net_weight", "type":"asset"},
+         {"name":"cpu_weight", "type":"asset"},
+         {"name":"storage_stake", "type":"asset"},
+         {"name":"storage_bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "eosio_parameters",
+      "base": "",
+      "fields": [
+         {"name":"base_per_transaction_net_usage", "type":"uint32"},
+         {"name":"base_per_transaction_cpu_usage", "type":"uint32"},
+         {"name":"base_per_action_cpu_usage", "type":"uint32"},
+         {"name":"base_setcode_cpu_usage", "type":"uint32"},
+         {"name":"per_signature_cpu_usage", "type":"uint32"},
+         {"name":"per_lock_net_usage", "type":"uint32"},
+         {"name":"context_free_discount_cpu_usage_num", "type":"uint64"},
+         {"name":"context_free_discount_cpu_usage_den", "type":"uint64"},
+         {"name":"max_transaction_cpu_usage", "type":"uint32"},
+         {"name":"max_transaction_net_usage", "type":"uint32"},
+         {"name":"max_block_cpu_usage", "type": "uint64"},
+         {"name":"target_block_cpu_usage_pct", "type": "uint32"},
+         {"name":"max_block_net_usage", "type": "uint64"},
+         {"name":"target_block_net_usage_pct", "type": "uint32"},
+         {"name":"max_transaction_lifetime", "type":"uint32"},
+         {"name":"max_transaction_exec_time", "type":"uint32"},
+         {"name":"max_authority_depth", "type":"uint16"},
+         {"name":"max_inline_depth", "type":"uint16"},
+         {"name":"max_inline_action_size", "type":"uint32"},
+         {"name":"max_generated_transaction_count", "type":"uint32"},
+         {"name":"max_transaction_delay", "type":"uint32"},
+         {"name":"max_storage_size", "type":"uint64"},
+         {"name":"percent_of_max_inflation_rate", "type":"uint32"},
+         {"name":"storage_reserve_ratio", "type":"uint32"}
+      ]
+    },{
+      "name": "eosio_global_state",
+      "base": "eosio_parameters",
+      "fields": [
+         {"name":"total_storage_bytes_reserved", "type":"uint64"},
+         {"name":"total_storage_stake", "type":"uint64"},
+         {"name":"payment_per_block", "type":"uint64"}
+      ]
+    },{
+      "name": "producer_info",
+      "base": "",
+      "fields": [
+         {"name":"owner",              "type":"account_name"},
+         {"name":"total_votes",        "type":"uint64"},
+         {"name":"prefs",              "type":"eosio_parameters"},
+         {"name":"packed_key",         "type":"uint8[]"},
+         {"name":"per_block_payments", "type":"uint64"},
+         {"name":"last_claim_time",    "type":"uint32"}
+      ]
+    },{
+      "name": "regproducer",
+      "base": "",
+      "fields": [
+        {"name":"producer",     "type":"account_name"},
+        {"name":"producer_key", "type":"public_key"}
+      ]
+    },{
+      "name": "unregprod",
+      "base": "",
+      "fields": [
+        {"name":"producer",     "type":"account_name"}
+      ]
+    },{
+      "name": "voteproducer",
+      "base": "",
+      "fields": [
+        {"name":"voter",     "type":"account_name"},
+        {"name":"producers", "type":"account_name[]"}
+      ]
+    },{
+      "name": "voter_info",
+      "base": "",
+      "fields": [
+        {"name":"owner",             "type":"account_name"},
+        {"name":"last_update",       "type":"uint32"},
+        {"name":"staked",            "type":"asset"},
+        {"name":"unstaking",         "type":"asset"},
+        {"name":"unstake_per_week",  "type":"asset"},
+        {"name":"producers",         "type":"account_name[]"},
+        {"name":"deferred_trx_id",   "type":"uint32"},
+        {"name":"last_unstake",      "type":"uint32"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "bond",
+      "type": "bond",
+      "ricardian_contract": ""
+    },{
+      "name": "unbond",
+      "type": "unbond",
+      "ricardian_contract": ""
+    },{
+      "name": "regproducer",
+      "type": "regproducer",
+      "ricardian_contract": ""
+    },{
+      "name": "unregprod",
+      "type": "unregprod",
+      "ricardian_contract": ""
+    },{
+      "name": "voteproducer",
+      "type": "voteproducer",
+      "ricardian_contract": ""
+    },{
+      "name": "nonce",
+      "type": "nonce",
+      "ricardian_contract": ""
+    },{
+      "name": "setprods",
+      "type": "set_producers",
+      "ricardian_contract": ""
+    },{
+      "name": "unsetprods",
+      "type": "unset_producers",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [
+        {
+           "name":"voters",
+           "type":"voter_info",
+           "index_type":"i64",
+           "key_names": ["owner"],
+           "key_types": ["uint64"]
+        },{
+           "name":"producerinfo",
+           "type":"producer_info",
+           "index_type":"i64",
+           "key_names": ["owner"],
+           "key_types": ["uint64"]
+        }
+  ],
+  "ricardian_clauses": []
+}

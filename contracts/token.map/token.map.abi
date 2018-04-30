@@ -1,0 +1,93 @@
+{
+  "types": [],
+  "structs": [{
+      "name": "transfer",
+      "base": "",
+      "fields": [
+        {"name":"from", "type":"account_name"},
+        {"name":"to", "type":"account_name"},
+        {"name":"quantity", "type":"asset"},
+        {"name":"memo", "type":"string"}
+      ]
+    },{
+     "name": "init",
+     "base": "",
+     "fields": [
+        {"name":"issuer", "type":"account_name"},
+        {"name":"can_freeze", "type":"uint8"},
+        {"name":"can_recall", "type":"uint8"},
+        {"name":"can_whitelist", "type":"uint8"}
+     ]
+  },{
+     "name": "maping",
+     "base": "",
+     "fields": [
+        {"name":"to", "type":"account_name"},
+        {"name":"id", "type":"uint64"}
+     ]
+  },{
+      "name": "account",
+      "base": "",
+      "fields": [
+        {"name":"balance", "type":"asset"},
+        {"name":"frozen", "type":"uint8"},
+        {"name":"whitelist", "type":"uint8"}
+      ]
+    },{
+      "name": "currency_stats",
+      "base": "",
+      "fields": [
+        {"name":"supply", "type":"asset"},
+        {"name":"max_supply", "type":"asset"},
+        {"name":"issuer", "type":"account_name"},
+        {"name":"can_freeze", "type":"uint8"},
+        {"name":"can_recall", "type":"uint8"},
+        {"name":"can_whitelist", "type":"uint8"},
+        {"name":"is_frozen", "type":"uint8"},
+        {"name":"enforce_whitelist", "type":"uint8"}
+      ]
+    },{
+      "name": "account_to_id",
+      "base": "",
+      "fields": [
+         {"name":"name", "type":"account_name"},
+         {"name":"id", "type":"uint64"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "transfer",
+      "type": "transfer",
+      "ricardian_contract": ""
+    },{
+      "name": "maping",
+      "type": "maping",
+      "ricardian_contract": ""
+    }, {
+      "name": "init",
+      "type": "init",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [{
+      "name": "accounts",
+      "type": "account",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "stat",
+      "type": "currency_stats",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "accountmap",
+      "type": "account_to_id",
+      "index_type": "i64",
+      "key_names" : ["id"],
+      "key_types" : ["uint64"]
+    }
+  ],
+  "ricardian_clauses": []
+}

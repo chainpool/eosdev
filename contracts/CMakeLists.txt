@@ -16,6 +16,8 @@ add_subdirectory(identity)
 add_subdirectory(stltest)
 add_subdirectory(exchange)
 add_subdirectory(test.inline)
+add_subdirectory(System)
+add_subdirectory(token.map)
 
 #add_subdirectory(bancor)
 add_subdirectory(hello)
