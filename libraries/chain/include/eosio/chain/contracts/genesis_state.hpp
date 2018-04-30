@@ -40,7 +40,7 @@ struct genesis_state_type {
       .max_transaction_delay          = config::default_max_trx_delay
    };
 
-   time_point                               initial_timestamp = fc::time_point::from_iso_string( "2018-03-01T12:00:00" );;
+   time_point                               initial_timestamp = fc::time_point::from_iso_string( "2018-04-30T00:00:00" );;
    public_key_type                          initial_key = fc::variant("EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV").as<public_key_type>();
 
    /**
