@@ -1405,10 +1405,8 @@ int main( int argc, char** argv ) {
    vector<string> permissions;
    auto actionsSubcommand = push->add_subcommand("action", localized("Push a transaction with a single action"));
    actionsSubcommand->fallthrough(false);
-   actionsSubcommand->add_option("contract", contract,
-                                 localized("The account providing the contract to execute"), true)->required();
-   actionsSubcommand->add_option("action", action,
-                                 localized("A JSON string or filename defining the action to execute on the contract"), true)->required();
+   actionsSubcommand->add_option("contract", contract,localized("The account providing the contract to execute"), true)->required();
+   actionsSubcommand->add_option("action", action,localized("A JSON string or filename defining the action to execute on the contract"), true)->required();
    actionsSubcommand->add_option("data", data, localized("The arguments to the contract"))->required();
 
    add_standard_transaction_options(actionsSubcommand);
@@ -1428,6 +1426,77 @@ int main( int argc, char** argv ) {
 
       send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}});
    });
+
+
+ //==========================================================================================
+    // Push subcommand
+    auto pushs = app.add_subcommand("pushs", localized("Push two logical transactions to the block chain"), false);
+    pushs->require_subcommand();
+    // push action2
+    string contract1;
+    string action1;
+    string data1;
+    string contract2;
+    string action2;
+    string data2;
+ 
+    vector<string> permissions_2;
+    auto actionsSubcommand_2 = pushs->add_subcommand("actions", localized("Pushs a transaction with two actions"));
+ 
+    actionsSubcommand_2->fallthrough(false);
+ 
+    actionsSubcommand_2->add_option("contract1", contract1,localized("The account1 providing the contract to execute"), true)->required();
+ 
+    actionsSubcommand_2->add_option("action1", action1,localized("A JSON string or filename defining the actio1n to execute on the contract1"), true)->required();
+ 
+    actionsSubcommand_2->add_option("data1", data1, localized("The arguments to the contract1"))->required();
+ 
+    actionsSubcommand_2->add_option("contract2", contract2,localized("The account providing the contract2 to execute"), true)->required();
+ 
+    actionsSubcommand_2->add_option("action2", action2,localized("A JSON string or filename defining the action2 to execute on the contract2"), true)->required();
+ 
+    actionsSubcommand_2->add_option("data2", data2, localized("The arguments to the contract2"))->required();
+    add_standard_transaction_options(actionsSubcommand_2);
+
+    actionsSubcommand_2->set_callback([&] {
+ 
+       fc::variant action_args_var1;
+       try {
+ 
+          action_args_var1 = json_from_file_or_string(data1, fc::json::relaxed_parser);
+ 
+       } EOS_RETHROW_EXCEPTIONS(action_type_exception, "Fail to parse action2 JSON data1='${data1}'", ("data1",data1))
+ 
+       auto arg1= fc::mutable_variant_object
+                 ("code", contract1)
+                 ("action", action1)
+                 ("args", action_args_var1);
+       auto result1 = call(json_to_bin_func, arg1);
+ 
+       fc::variant action_args_var2;
+       try {
+          action_args_var2 = json_from_file_or_string(data2, fc::json::relaxed_parser);
+       } EOS_RETHROW_EXCEPTIONS(action_type_exception, "Fail to parse action2 JSON data2='${data2}'", ("data2",data2))
+ 
+       auto arg2= fc::mutable_variant_object
+                 ("code", contract2)
+                 ("action", action2)
+                 ("args", action_args_var2);
+       auto result2 = call(json_to_bin_func, arg2);
+ 
+       auto accountPermissions_2 = get_account_permissions(tx_permission);
+       std::vector<chain::action> two_actions;
+ 
+       two_actions.push_back(chain::action{accountPermissions_2, contract1, action1, result1.get_object()["binargs"].as<bytes>()});
+       two_actions.push_back(chain::action{accountPermissions_2, contract2, action2, result2.get_object()["binargs"].as<bytes>()});
+ 
+       send_actions(std::move(two_actions));
+ 
+       //send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}});
+       //std::vector<chain::action>&& actions
+    });
+ //=============================================================================================================
+
 
    // push transaction
    string trx_to_push;
