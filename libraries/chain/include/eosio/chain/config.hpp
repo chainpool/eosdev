@@ -28,7 +28,7 @@ const static uint64_t active_name = N(active);
 const static uint64_t owner_name  = N(owner);
 const static uint64_t eosio_any_name = N(eosio.any);
 
-const static int      block_interval_ms = 500;
+const static int      block_interval_ms = 3000;
 const static int      block_interval_us = block_interval_ms*1000;
 const static uint64_t block_timestamp_epoch = 946684800000ll; // epoch is year 2000.
 
