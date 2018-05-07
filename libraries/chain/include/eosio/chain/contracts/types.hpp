@@ -157,6 +157,7 @@ struct setabi {
 };
 
 
+/*
 struct updateauth {
    account_name                      account;
    permission_name                   permission;
@@ -229,6 +230,7 @@ struct unlinkauth {
       return N(unlinkauth);
    }
 };
+*/
 
 struct onerror : bytes {
    using bytes::bytes;
@@ -242,6 +244,7 @@ struct onerror : bytes {
    }
 };
 
+/*
 struct postrecovery {
    account_name       account;
    authority          data;
@@ -292,7 +295,7 @@ struct canceldelay {
    static action_name get_name() {
       return N(canceldelay);
    }
-};
+};*/
 
 } } } /// namespace eosio::chain::contracts
 
@@ -307,7 +310,7 @@ FC_REFLECT( eosio::chain::contracts::abi_def                          , (types)(
 FC_REFLECT( eosio::chain::contracts::newaccount                       , (creator)(name)(owner)(active)(recovery) )
 FC_REFLECT( eosio::chain::contracts::setcode                          , (account)(vmtype)(vmversion)(code) ) //abi
 FC_REFLECT( eosio::chain::contracts::setabi                           , (account)(abi) )
-FC_REFLECT( eosio::chain::contracts::updateauth                       , (account)(permission)(parent)(data)(delay) )
+/*FC_REFLECT( eosio::chain::contracts::updateauth                       , (account)(permission)(parent)(data)(delay) )
 FC_REFLECT( eosio::chain::contracts::deleteauth                       , (account)(permission) )
 FC_REFLECT( eosio::chain::contracts::linkauth                         , (account)(code)(type)(requirement) )
 FC_REFLECT( eosio::chain::contracts::unlinkauth                       , (account)(code)(type) )
@@ -315,3 +318,4 @@ FC_REFLECT( eosio::chain::contracts::postrecovery                     , (account
 FC_REFLECT( eosio::chain::contracts::passrecovery                     , (account) )
 FC_REFLECT( eosio::chain::contracts::vetorecovery                     , (account) )
 FC_REFLECT( eosio::chain::contracts::canceldelay                      , (canceling_auth)(trx_id) )
+*/

@@ -18,6 +18,7 @@ namespace eosio { namespace chain {
  */
 struct chain_config {
 
+/*
    uint32_t   base_per_transaction_net_usage; ///< the base amount of net usage billed for a transaction to cover incidentals
    uint32_t   base_per_transaction_cpu_usage; ///< the base amount of cpu usage billed for a transaction to cover incidentals
    uint32_t   base_per_action_cpu_usage;      ///< the base amount of cpu usage billed for an action to cover incidentals
@@ -35,7 +36,7 @@ struct chain_config {
    uint32_t   target_block_cpu_usage_pct;     ///< the target percent (1% == 100, 100%= 10,000) of maximum cpu usage; exceeding this triggers congestion handling
    uint64_t   max_block_net_usage;            ///< the maxiumum net usage in instructions for a block
    uint32_t   target_block_net_usage_pct;     ///< the target percent (1% == 100, 100%= 10,000) of maximum net usage; exceeding this triggers congestion handling
-
+*/
    uint32_t   max_transaction_lifetime;
    uint32_t   max_transaction_exec_time;
    uint16_t   max_authority_depth;
@@ -48,7 +49,7 @@ struct chain_config {
 
    template<typename Stream>
    friend Stream& operator << ( Stream& out, const chain_config& c ) {
-      return out << "Base Per-Transaction Net Usage: " << c.base_per_transaction_net_usage << ", "
+      return out /*<< "Base Per-Transaction Net Usage: " << c.base_per_transaction_net_usage << ", "
                  << "Base Per-Transaction CPU Usage: " << c.base_per_transaction_cpu_usage << ", "
                  << "Base Per-Action CPU Usage: " << c.base_per_action_cpu_usage << ", "
                  << "Base Setcode CPU Usage: " << c.base_setcode_cpu_usage << ", "
@@ -60,7 +61,7 @@ struct chain_config {
                  << "Max Block CPU Usage: " << c.max_block_cpu_usage << ", "
                  << "Target Block CPU Usage Percent: " << c.target_block_cpu_usage_pct << ", "
                  << "Max Block NET Usage: " << c.max_block_net_usage << ", "
-                 << "Target Block NET Usage Percent: " << ((double)c.target_block_net_usage_pct / (double)config::percent_1) << "%, "
+                 << "Target Block NET Usage Percent: " << ((double)c.target_block_net_usage_pct / (double)config::percent_1) << "%, "*/
                  << "Max Transaction Lifetime: " << ((double)c.max_transaction_lifetime / (double)config::percent_1) << "%, "
                  << "Max Authority Depth: " << c.max_authority_depth << ", "
                  << "Max Inline Depth: " << c.max_inline_depth << ", "
@@ -76,7 +77,7 @@ inline bool operator!=(const chain_config& a, const chain_config& b) { return !(
 } } // namespace eosio::chain
 
 FC_REFLECT(eosio::chain::chain_config,
-           (base_per_transaction_net_usage)
+           /*(base_per_transaction_net_usage)
            (base_per_transaction_cpu_usage)
            (base_per_action_cpu_usage)
            (base_setcode_cpu_usage)
@@ -84,7 +85,7 @@ FC_REFLECT(eosio::chain::chain_config,
            (context_free_discount_cpu_usage_num)(context_free_discount_cpu_usage_den)
            (max_transaction_cpu_usage)(max_transaction_net_usage)
            (max_block_cpu_usage)(target_block_cpu_usage_pct)
-           (max_block_net_usage)(target_block_net_usage_pct)
+           (max_block_net_usage)(target_block_net_usage_pct)*/
            (max_transaction_lifetime)(max_transaction_exec_time)(max_authority_depth)
            (max_inline_depth)(max_inline_action_size)(max_generated_transaction_count)
            (max_transaction_delay)

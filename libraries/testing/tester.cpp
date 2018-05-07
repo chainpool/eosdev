@@ -396,6 +396,7 @@ namespace eosio { namespace testing {
    }
 
 
+/*
    void base_tester::link_authority( account_name account, account_name code, permission_name req, action_name type ) {
       signed_transaction trx;
 
@@ -419,7 +420,9 @@ namespace eosio { namespace testing {
       push_transaction( trx );
    }
 
+*/
 
+/*
    void base_tester::set_authority( account_name account,
                                permission_name perm,
                                authority auth,
@@ -451,8 +454,9 @@ namespace eosio { namespace testing {
                                     permission_name parent) {
       set_authority(account, perm, auth, parent, { { account, config::owner_name } }, { get_private_key( account, "owner" ) });
    }
+*/
 
-
+/*
 
    void base_tester::delete_authority( account_name account,
                                     permission_name perm,
@@ -475,6 +479,7 @@ namespace eosio { namespace testing {
                                        permission_name perm ) {
       delete_authority(account, perm, { permission_level{ account, config::owner_name } }, { get_private_key( account, "owner" ) });
    }
+*/
 
 
    void base_tester::set_code( account_name account, const char* wast ) try {
