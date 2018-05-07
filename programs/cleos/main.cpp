@@ -39,7 +39,7 @@ Subcommands:
   sign                        Sign a transaction
   push                        Push arbitrary transactions to the blockchain
   multisig                    Multisig contract commands
-  
+
 ```
 To get help with any particular subcommand, run it with no arguments as well:
 ```
@@ -250,7 +250,7 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys) {
    trx = signed_trx.as<signed_transaction>();
 }
 
-fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_transaction( signed_transaction& trx, double extra_kcpu = 0.1, packed_transaction::compression_type compression = packed_transaction::none ) {
    auto info = get_info();
    trx.expiration = info.head_block_time + tx_expiration;
 
@@ -276,6 +276,7 @@ fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000
 
    trx.max_kcpu_usage = (tx_max_cpu_usage + 1023)/1024;
    trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
+   trx.transaction_fee = transaction_fee;
 
    if (!tx_skip_sign) {
       sign_transaction(trx, required_keys);
@@ -288,11 +289,11 @@ fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000
    }
 }
 
-fc::variant push_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_actions(std::vector<chain::action>&& actions, double transaction_fee, packed_transaction::compression_type compression = packed_transaction::none ) {
    signed_transaction trx;
    trx.actions = std::forward<decltype(actions)>(actions);
 
-   return push_transaction(trx, extra_kcpu, compression);
+   return push_transaction(trx, transaction_fee, compression);
 }
 
 void print_result( const fc::variant& result ) {
@@ -342,8 +343,8 @@ void send_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu = 100
    }
 }
 
-void send_transaction( signed_transaction& trx, int32_t extra_kcpu, packed_transaction::compression_type compression = packed_transaction::none  ) {
-   auto result = push_transaction(trx, extra_kcpu, compression);
+void send_transaction( signed_transaction& trx, double transaction_fee, packed_transaction::compression_type compression = packed_transaction::none  ) {
+   auto result = push_transaction(trx, transaction_fee, compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result );
@@ -1170,7 +1171,7 @@ int main( int argc, char** argv ) {
       {
          abiPath = (cpath / (cpath.filename().generic_string()+".abi")).generic_string();
       }
-      
+
       std::cout << localized(("Reading WAST/WASM from " + wastPath + "...").c_str()) << std::endl;
       fc::read_file_contents(wastPath, wast);
       FC_ASSERT( !wast.empty(), "no wast file found ${f}", ("f", wastPath) );

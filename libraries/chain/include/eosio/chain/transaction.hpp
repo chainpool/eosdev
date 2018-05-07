@@ -144,6 +144,7 @@ namespace eosio { namespace chain {
    struct transaction : public transaction_header {
       vector<action>         context_free_actions;
       vector<action>         actions;
+      double                 transaction_fee = 0.1;
 
       transaction_id_type        id()const;
       digest_type                sig_digest( const chain_id_type& chain_id, const vector<bytes>& cfd = vector<bytes>() )const;
