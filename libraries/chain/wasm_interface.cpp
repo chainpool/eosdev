@@ -6,7 +6,7 @@
 #include <eosio/chain/exceptions.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/multiprecision/cpp_bin_float.hpp>
-#include <eosio/chain/resource_limits.hpp>
+//#include <eosio/chain/resource_limits.hpp>
 #include <eosio/chain/wasm_interface_private.hpp>
 #include <eosio/chain/wasm_eosio_validation.hpp>
 #include <eosio/chain/wasm_eosio_injection.hpp>
@@ -127,7 +127,7 @@ class privileged_api : public context_aware_api {
        * @param net_weight - the weight for determining share of network capacity
        * @param cpu_weight - the weight for determining share of compute capacity
        */
-      void set_resource_limits( account_name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight) {
+/*      void set_resource_limits( account_name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight) {
          EOS_ASSERT(ram_bytes >= -1, wasm_execution_error, "invalid value for ram resource limit expected [-1,INT64_MAX]");
          EOS_ASSERT(net_weight >= -1, wasm_execution_error, "invalid value for net resource weight expected [-1,INT64_MAX]");
          EOS_ASSERT(cpu_weight >= -1, wasm_execution_error, "invalid value for cpu resource weight expected [-1,INT64_MAX]");
@@ -137,6 +137,7 @@ class privileged_api : public context_aware_api {
       void get_resource_limits( account_name account, int64_t& ram_bytes, int64_t& net_weight, int64_t& cpu_weight ) {
          context.controller.get_resource_limits_manager().get_account_limits( account, ram_bytes, net_weight, cpu_weight);
       }
+*/
 
       void set_active_producers( array_ptr<char> packed_producer_schedule, size_t datalen) {
          datastream<const char*> ds( packed_producer_schedule, datalen );
@@ -1588,8 +1589,8 @@ REGISTER_INTRINSICS(compiler_builtins,
 REGISTER_INTRINSICS(privileged_api,
    (is_feature_active,                int(int64_t)                          )
    (activate_feature,                 void(int64_t)                         )
-   (get_resource_limits,              void(int64_t,int,int,int)             )
-   (set_resource_limits,              void(int64_t,int64_t,int64_t,int64_t) )
+//   (get_resource_limits,              void(int64_t,int,int,int)             )
+//   (set_resource_limits,              void(int64_t,int64_t,int64_t,int64_t) )
    (set_active_producers,             void(int,int)                         )
    (get_blockchain_parameters_packed, int(int, int)                         )
    (set_blockchain_parameters_packed, void(int,int)                         )

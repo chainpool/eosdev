@@ -364,7 +364,7 @@ void account_history_plugin_impl::applied_block(const chain::block_trace& trace)
                add(db, create.active.accounts, create.name, ACTIVE);
                add(db, create.recovery.accounts, create.name, RECOVERY);
             }
-            else if (act_trace.act.name == UPDATE_AUTH)
+            /*else if (act_trace.act.name == UPDATE_AUTH)
             {
                const auto update = act_trace.act.data_as<chain::contracts::updateauth>();
                remove<public_key_history_multi_index, by_account_permission>(db, update.account, update.permission);
@@ -379,7 +379,7 @@ void account_history_plugin_impl::applied_block(const chain::block_trace& trace)
                remove<public_key_history_multi_index, by_account_permission>(db, del.account, del.permission);
 
                remove<account_control_history_multi_index, by_controlled_authority>(db, del.account, del.permission);
-            }
+            }*/
          }
       }
    };

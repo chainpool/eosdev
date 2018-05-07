@@ -2036,6 +2036,7 @@ BOOST_AUTO_TEST_CASE(abi_cycle)
 
 } FC_LOG_AND_RETHROW() }
 
+/*
 BOOST_AUTO_TEST_CASE(linkauth)
 { try {
 
@@ -2198,7 +2199,7 @@ BOOST_AUTO_TEST_CASE(deleteauth)
    verify_type_round_trip_conversion<contracts::deleteauth>( abis, "deleteauth", var);
 
 } FC_LOG_AND_RETHROW() }
-
+*/
 BOOST_AUTO_TEST_CASE(newaccount)
 { try {
 
@@ -2545,6 +2546,7 @@ BOOST_AUTO_TEST_CASE(setabi)
 
 } FC_LOG_AND_RETHROW() }
 
+/*
 BOOST_AUTO_TEST_CASE(postrecovery)
 { try {
 
@@ -2644,6 +2646,7 @@ BOOST_AUTO_TEST_CASE(vetorecovery)
    verify_type_round_trip_conversion<contracts::vetorecovery>( abis, "vetorecovery", var);
 
 } FC_LOG_AND_RETHROW() }
+*/
 
 struct action1 {
    action1() = default;

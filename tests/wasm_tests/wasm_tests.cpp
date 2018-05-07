@@ -602,6 +602,7 @@ BOOST_FIXTURE_TEST_CASE(cpu_usage_tests, tester ) try {
 } FC_LOG_AND_RETHROW()
 
 
+/*
 // test weighted cpu limit
 BOOST_FIXTURE_TEST_CASE(weighted_cpu_limit_tests, tester ) try {
 
@@ -664,6 +665,7 @@ BOOST_FIXTURE_TEST_CASE(weighted_cpu_limit_tests, tester ) try {
    }
    BOOST_REQUIRE_EQUAL(count, 3);
 } FC_LOG_AND_RETHROW()
+*/
 
 /**
  * Make sure WASM "start" method is used correctly
@@ -1486,6 +1488,7 @@ BOOST_FIXTURE_TEST_CASE(net_usage_tests, tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+/*
 BOOST_FIXTURE_TEST_CASE(weighted_net_usage_tests, tester ) try {
    account_name account = N(f_tests);
    account_name acc2 = N(acc2);
@@ -1540,5 +1543,6 @@ BOOST_FIXTURE_TEST_CASE(weighted_net_usage_tests, tester ) try {
    BOOST_REQUIRE_EQUAL(false, check(128));
 
 } FC_LOG_AND_RETHROW()
+*/
 
 BOOST_AUTO_TEST_SUITE_END()
