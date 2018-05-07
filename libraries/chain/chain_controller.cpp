@@ -40,6 +40,8 @@
 #include <fstream>
 #include <functional>
 #include <chrono>
+#include <cmath>
+#include <limits>
 
 namespace eosio { namespace chain {
 
@@ -300,6 +302,7 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
    const transaction& trx = mtrx.trx();
    mtrx.delay =  fc::seconds(trx.delay_sec);
 
+   validate_transaction_fee(trx);
    validate_transaction_with_minimal_state( trx, mtrx.billable_packed_size );
    validate_expiration_not_too_far(trx, head_block_time() + mtrx.delay);
    validate_referenced_accounts(trx);
@@ -346,6 +349,7 @@ transaction_trace chain_controller::_push_transaction( transaction_metadata&& da
 
       const auto& trx = meta.trx();
 
+      validate_transaction_fee(trx);
       // Validate uniqueness and expiration again
       validate_uniqueness(trx);
       validate_not_expired(trx);
@@ -1335,6 +1339,15 @@ void chain_controller::validate_uniqueness( const transaction& trx )const {
    auto transaction = _db.find<transaction_object, by_trx_id>(trx.id());
    EOS_ASSERT(transaction == nullptr, tx_duplicate, "Transaction is not unique");
 }
+
+void chain_controller::validate_transaction_fee( const transaction& trx )const {
+   //auto transaction = _db.find<transaction_object, by_trx_id>(trx.id());
+   auto actual_fee = trx.transaction_fee;
+   auto action_consume_fee = trx.actions.size() * config::token_per_action;
+   bool enough_fee = std::fabs(actual_fee - action_consume_fee) < std::numeric_limits<double>::epsilon();
+   EOS_ASSERT(!enough_fee, tx_not_enough_fee, "Transaction fee not enough.");
+}
+
 
 void chain_controller::record_transaction(const transaction& trx)
 {

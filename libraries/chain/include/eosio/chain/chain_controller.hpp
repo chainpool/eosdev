@@ -392,6 +392,7 @@ namespace eosio { namespace chain {
          void validate_transaction_without_state( const transaction& trx )const;
          void validate_transaction_with_minimal_state( const transaction& trx, uint32_t min_net_usage = 0 )const;
          void validate_transaction_with_minimal_state( const packed_transaction& packed_trx, const transaction* trx_ptr = nullptr )const;
+         void validate_transaction_fee( const transaction& trx )const;
          /// @}
 
          void record_transaction( const transaction& trx );
