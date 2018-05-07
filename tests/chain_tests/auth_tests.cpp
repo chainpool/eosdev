@@ -60,6 +60,7 @@ BOOST_FIXTURE_TEST_CASE( missing_auths, TESTER ) { try {
  *  This test case will attempt to allow one account to transfer on behalf
  *  of another account by updating the active authority.
  */
+/*
 BOOST_FIXTURE_TEST_CASE( delegate_auth, TESTER ) { try {
    create_accounts( {N(alice),N(bob)});
    produce_block();
@@ -80,8 +81,9 @@ BOOST_FIXTURE_TEST_CASE( delegate_auth, TESTER ) { try {
    BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trace.id));
 
 } FC_LOG_AND_RETHROW() }
+*/
 
-
+/*
 BOOST_AUTO_TEST_CASE(update_auths) {
 try {
    TESTER chain;
@@ -213,7 +215,9 @@ try {
    BOOST_TEST((chain.find<permission_object, by_owner>(boost::make_tuple("alice", "trading"))) == nullptr);
 
 } FC_LOG_AND_RETHROW() }
+*/
 
+/*
 BOOST_AUTO_TEST_CASE(link_auths) { try {
    TESTER chain;
 
@@ -256,6 +260,7 @@ BOOST_AUTO_TEST_CASE(link_auths) { try {
    chain.push_reqauth("alice", { permission_level{N(alice), "spending"} }, { spending_priv_key });
 
 } FC_LOG_AND_RETHROW() }
+*/
 
 BOOST_AUTO_TEST_CASE(create_account) {
 try {
@@ -295,6 +300,7 @@ try {
 
 } FC_LOG_AND_RETHROW() }
 
+/*
 BOOST_AUTO_TEST_CASE( any_auth ) { try {
    TESTER chain;
    chain.create_accounts( {"alice","bob"} );
@@ -330,6 +336,7 @@ BOOST_AUTO_TEST_CASE( any_auth ) { try {
    chain.produce_block();
 
 } FC_LOG_AND_RETHROW() }
+*/
 
 BOOST_AUTO_TEST_CASE(no_double_billing) {
 try {
@@ -441,6 +448,7 @@ try {
 
 } FC_LOG_AND_RETHROW() }
 
+/*
 BOOST_AUTO_TEST_CASE( linkauth_special ) { try {
    TESTER chain;
 
@@ -485,6 +493,6 @@ BOOST_AUTO_TEST_CASE( linkauth_special ) { try {
    validate_disallow("canceldelay");
 
 } FC_LOG_AND_RETHROW() }
-
+*/
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -456,6 +456,7 @@ chain::action create_setcode(const name& account, const bytes& code) {
    };
 }
 
+/*
 chain::action create_updateauth(const name& account, const name& permission, const name& parent, const authority& auth) {
    return action { tx_permission.empty() ? vector<chain::permission_level>{{account,config::active_name}} : get_account_permissions(tx_permission),
                    contracts::updateauth{account, permission, parent, auth}};
@@ -475,6 +476,7 @@ chain::action create_unlinkauth(const name& account, const name& code, const nam
    return action { tx_permission.empty() ? vector<chain::permission_level>{{account,config::active_name}} : get_account_permissions(tx_permission),
                    contracts::unlinkauth{account, code, type}};
 }
+*/
 
 fc::variant json_from_file_or_string(const string& file_or_str, fc::json::parse_type ptype = fc::json::legacy_parser)
 {
@@ -523,7 +525,7 @@ struct set_account_permission_subcommand {
          bool is_delete = boost::iequals(authorityJsonOrFile, "null");
 
          if (is_delete) {
-            send_actions({create_deleteauth(account, permission)});
+            //send_actions({create_deleteauth(account, permission)});
          } else {
             authority auth = parse_json_authority_or_key(authorityJsonOrFile);
 
@@ -550,7 +552,7 @@ struct set_account_permission_subcommand {
                parent = name(parentStr);
             }
 
-            send_actions({create_updateauth(account, permission, parent, auth)});
+            //send_actions({create_updateauth(account, permission, parent, auth)});
          }
       });
    }
@@ -579,10 +581,10 @@ struct set_action_permission_subcommand {
          bool is_delete = boost::iequals(requirementStr, "null");
 
          if (is_delete) {
-            send_actions({create_unlinkauth(account, code, type)});
+            //send_actions({create_unlinkauth(account, code, type)});
          } else {
             name requirement = name(requirementStr);
-            send_actions({create_linkauth(account, code, type, requirement)});
+            //send_actions({create_linkauth(account, code, type, requirement)});
          }
       });
    }
