@@ -145,7 +145,6 @@ namespace eosio { namespace chain {
    struct transaction : public transaction_header {
       vector<action>         context_free_actions;
       vector<action>         actions;
-      double                 transaction_fee = 0.1;
 
       transaction_id_type        id()const;
       digest_type                sig_digest( const chain_id_type& chain_id, const vector<bytes>& cfd = vector<bytes>() )const;
@@ -153,6 +152,8 @@ namespace eosio { namespace chain {
                                                      const chain_id_type& chain_id,
                                                      const vector<bytes>& cfd = vector<bytes>(),
                                                      bool allow_duplicate_keys = false )const;
+      double                     get_transaction_fee()const;
+      account_name               get_transaction_sender()const;
 
    };
 
@@ -174,6 +175,8 @@ namespace eosio { namespace chain {
       const signature_type&     sign(const private_key_type& key, const chain_id_type& chain_id);
       signature_type            sign(const private_key_type& key, const chain_id_type& chain_id)const;
       flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, bool allow_duplicate_keys = false )const;
+      double                    get_transaction_fee()const;
+      account_name              get_transaction_sender()const;
    };
 
    struct packed_transaction {

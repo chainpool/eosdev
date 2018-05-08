@@ -1345,7 +1345,7 @@ void chain_controller::validate_transaction_fee( const transaction& trx )const {
    auto fee_rate = trx.fee_rate;
    EOS_ASSERT(fee_rate < 1.0, tx_invalid_fee_rate, "Fee rate must be great than or equal to 1.0");
 
-   auto actual_fee = trx.transaction_fee;
+   auto actual_fee = trx.get_transaction_fee();
    auto action_consume_fee = trx.actions.size() * config::token_per_action * fee_rate;
    bool enough_fee = std::fabs(actual_fee - action_consume_fee) < std::numeric_limits<double>::epsilon();
    EOS_ASSERT(!enough_fee, tx_not_enough_fee, "Transaction fee not enough.");

@@ -104,6 +104,15 @@ flat_set<public_key_type> transaction::get_signature_keys( const vector<signatur
    return recovered_pub_keys;
 } FC_CAPTURE_AND_RETHROW() }
 
+double transaction::get_transaction_fee()const {
+   return actions.size() * config::token_per_action * fee_rate;
+}
+
+account_name transaction::get_transaction_sender()const {
+   auto action = actions.at(0);
+   auto perm_level = action.authorization.at(0);
+   return perm_level.actor;
+}
 
 const signature_type& signed_transaction::sign(const private_key_type& key, const chain_id_type& chain_id) {
    signatures.push_back(key.sign(sig_digest(chain_id, context_free_data)));
@@ -117,6 +126,14 @@ signature_type signed_transaction::sign(const private_key_type& key, const chain
 flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id_type& chain_id, bool allow_duplicate_keys )const
 {
    return transaction::get_signature_keys(signatures, chain_id, context_free_data, allow_duplicate_keys);
+}
+
+double signed_transaction::get_transaction_fee()const {
+   return transaction::get_transaction_fee();
+}
+
+account_name signed_transaction::get_transaction_sender()const {
+   return transaction::get_transaction_sender();
 }
 
 uint32_t packed_transaction::get_billable_size()const {
