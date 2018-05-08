@@ -147,6 +147,7 @@ bool   tx_print_json = false;
 
 uint32_t tx_max_cpu_usage = 0;
 uint32_t tx_max_net_usage = 0;
+double tx_fee_rate = 1.0;
 
 vector<string> tx_permission;
 
@@ -175,6 +176,7 @@ void add_standard_transaction_options(CLI::App* cmd, string default_permission =
 
    cmd->add_option("--max-cpu-usage", tx_max_cpu_usage, localized("set an upper limit on the cpu usage budget, in instructions-retired, for the execution of the transaction (defaults to 0 which means no limit)"));
    cmd->add_option("--max-net-usage", tx_max_net_usage, localized("set an upper limit on the net usage budget, in bytes, for the transaction (defaults to 0 which means no limit)"));
+   cmd->add_option("--fee-rate", tx_fee_rate, localized("set fee rate of fee.(defaults is 1.0, must be great or equal to 1.0)"));
 }
 
 vector<chain::permission_level> get_account_permissions(const vector<string>& permissions) {
@@ -276,6 +278,7 @@ fc::variant push_transaction( signed_transaction& trx, double transaction_fee = 
 
    trx.max_kcpu_usage = (tx_max_cpu_usage + 1023)/1024;
    trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
+   trx.fee_rate = tx_fee_rate;
    trx.transaction_fee = transaction_fee;
 
    if (!tx_skip_sign) {
