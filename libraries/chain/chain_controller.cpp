@@ -31,11 +31,13 @@
 #include <boost/range/algorithm_ext/erase.hpp>
 #include <boost/range/algorithm_ext/is_sorted.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/sort.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/algorithm/remove_if.hpp>
 #include <boost/range/algorithm/equal.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <fstream>
 #include <functional>
@@ -1340,15 +1342,60 @@ void chain_controller::validate_uniqueness( const transaction& trx )const {
    EOS_ASSERT(transaction == nullptr, tx_duplicate, "Transaction is not unique");
 }
 
-void chain_controller::validate_transaction_fee( const transaction& trx )const {
-   //auto transaction = _db.find<transaction_object, by_trx_id>(trx.id());
-   auto fee_rate = trx.fee_rate;
-   EOS_ASSERT(fee_rate < 1.0, tx_invalid_fee_rate, "Fee rate must be great than or equal to 1.0");
+void chain_controller::walk_table(const name& code, const name& scope, const name& table, std::function<bool(const contracts::key_value_object& obj)> f) const
+{
+    //const auto& d = db.get_database();
+    const auto* t_id = _db.find<chain::contracts::table_id_object, chain::contracts::by_code_scope_table>(boost::make_tuple(code, scope, table));
+    if (t_id != nullptr) {
+       const auto &idx = _db.get_index<contracts::key_value_index, contracts::by_scope_primary>();
+       decltype(t_id->id) next_tid(t_id->id._id + 1);
+       auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
+       auto upper = idx.lower_bound(boost::make_tuple(next_tid));
 
-   auto actual_fee = trx.get_transaction_fee();
-   auto action_consume_fee = trx.actions.size() * config::token_per_action * fee_rate;
-   bool enough_fee = std::fabs(actual_fee - action_consume_fee) < std::numeric_limits<double>::epsilon();
-   EOS_ASSERT(!enough_fee, tx_not_enough_fee, "Transaction fee not enough.");
+       for (auto itr = lower; itr != upper; ++itr) {
+          if (!f(*itr)) {
+             break;
+          }
+       }
+    }
+}
+
+void chain_controller::validate_transaction_fee( const transaction& trx )const {
+   auto fee_rate = trx.fee_rate;
+   EOS_ASSERT(fee_rate.to_real() < 1.0, tx_invalid_fee_rate, "Fee rate must be great than or equal to 1.0");
+
+   auto sender = trx.get_transaction_sender();
+   vector<asset> results;
+   walk_table(N(token), sender, N(accounts), [&](const contracts::key_value_object& obj){
+
+      EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
+
+      asset cursor;
+      fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+      fc::raw::unpack(ds, cursor);
+
+      EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
+
+      if( boost::iequals(cursor.symbol_name(), "EOS") ) {
+        results.emplace_back(cursor);
+      }
+
+      // return false if we are looking for one and found it, true otherwise
+      return !(boost::iequals(cursor.symbol_name(), "EOS"));
+   });
+
+   auto balance = results.at(0);
+
+   // calculate all fee needed by trx sender.
+   auto fees = _pending_block->input_transactions | boost::adaptors::filtered([&](const packed_transaction& packed_tx){
+       auto trx_in_pool = packed_tx.get_transaction();
+       return trx_in_pool.get_transaction_sender() == sender;
+   }) | boost::adaptors::transformed([&](const packed_transaction& packed_tx){
+       return packed_tx.get_transaction().get_transaction_fee();
+   });
+   auto fee = std::accumulate(fees.begin(), fees.end(), asset(0)) + trx.get_transaction_fee();
+   bool has_enough_fee = balance < fee;
+   EOS_ASSERT(!has_enough_fee, tx_not_enough_fee, "Transaction fee not enough.");
 }
 
 void chain_controller::record_transaction(const transaction& trx)

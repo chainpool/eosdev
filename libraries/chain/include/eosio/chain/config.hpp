@@ -103,8 +103,9 @@ struct billable_size;
 template<typename T>
 constexpr uint64_t billable_size_v = ((billable_size<T>::value + billable_alignment - 1) / billable_alignment) * billable_alignment;
 
-// Transaction Fee
-const static double token_per_action = 0.1;
+// Transaction Fee, default to 0.1 EOS.
+const static int64_t fee_rate_in_asset_format = 1000;
+const static asset token_per_action = asset(1000);
 
 } } } // namespace eosio::chain::config
 

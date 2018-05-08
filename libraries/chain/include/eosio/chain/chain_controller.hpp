@@ -452,6 +452,8 @@ namespace eosio { namespace chain {
          transaction _get_on_block_transaction();
          void _apply_on_block_transaction();
 
+         void walk_table(const name& code, const name& scope, const name& table, std::function<bool(const contracts::key_value_object& obj)> f) const;
+
       //        producer_schedule_type calculate_next_round( const signed_block& next_block );
 
          database                         _db;

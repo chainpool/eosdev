@@ -88,6 +88,7 @@ Options:
 #include <eosio/chain/wast_to_wasm.hpp>
 #include <eosio/chain/transaction_trace.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
+#include <eosio/chain/asset.hpp>
 
 #include <boost/range/algorithm/find_if.hpp>
 #include <boost/range/algorithm/sort.hpp>
@@ -147,7 +148,7 @@ bool   tx_print_json = false;
 
 uint32_t tx_max_cpu_usage = 0;
 uint32_t tx_max_net_usage = 0;
-double tx_fee_rate = 1.0;
+int64_t tx_fee_rate = 1000;
 
 vector<string> tx_permission;
 
@@ -176,7 +177,7 @@ void add_standard_transaction_options(CLI::App* cmd, string default_permission =
 
    cmd->add_option("--max-cpu-usage", tx_max_cpu_usage, localized("set an upper limit on the cpu usage budget, in instructions-retired, for the execution of the transaction (defaults to 0 which means no limit)"));
    cmd->add_option("--max-net-usage", tx_max_net_usage, localized("set an upper limit on the net usage budget, in bytes, for the transaction (defaults to 0 which means no limit)"));
-   cmd->add_option("--fee-rate", tx_fee_rate, localized("set fee rate of fee.(defaults is 1.0, must be great or equal to 1.0)"));
+   cmd->add_option("--fee-rate", tx_fee_rate, localized("set fee rate of fee.(defaults is 1000, must be great or equal to 1000)"));
 }
 
 vector<chain::permission_level> get_account_permissions(const vector<string>& permissions) {
@@ -252,7 +253,7 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys) {
    trx = signed_trx.as<signed_transaction>();
 }
 
-fc::variant push_transaction( signed_transaction& trx, double fee_rate = 0.1, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_transaction( signed_transaction& trx, asset fee_rate = asset(1000), packed_transaction::compression_type compression = packed_transaction::none ) {
    auto info = get_info();
    trx.expiration = info.head_block_time + tx_expiration;
 
@@ -291,7 +292,7 @@ fc::variant push_transaction( signed_transaction& trx, double fee_rate = 0.1, pa
    }
 }
 
-fc::variant push_actions(std::vector<chain::action>&& actions, double fee_rate, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_actions(std::vector<chain::action>&& actions, asset fee_rate, packed_transaction::compression_type compression = packed_transaction::none ) {
    signed_transaction trx;
    trx.actions = std::forward<decltype(actions)>(actions);
 
@@ -335,7 +336,7 @@ void print_result( const fc::variant& result ) {
 }
 
 using std::cout;
-void send_actions(std::vector<chain::action>&& actions, double fee_rate = 1.0, packed_transaction::compression_type compression = packed_transaction::none ) {
+void send_actions(std::vector<chain::action>&& actions, asset fee_rate = asset(1000), packed_transaction::compression_type compression = packed_transaction::none ) {
    auto result = push_actions( move(actions), fee_rate, compression);
 
    if( tx_print_json ) {
@@ -345,7 +346,7 @@ void send_actions(std::vector<chain::action>&& actions, double fee_rate = 1.0, p
    }
 }
 
-void send_transaction( signed_transaction& trx, double transaction_fee, packed_transaction::compression_type compression = packed_transaction::none  ) {
+void send_transaction( signed_transaction& trx, asset transaction_fee, packed_transaction::compression_type compression = packed_transaction::none  ) {
    auto result = push_transaction(trx, transaction_fee, compression);
 
    if( tx_print_json ) {
@@ -1198,7 +1199,7 @@ int main( int argc, char** argv ) {
       } EOS_RETHROW_EXCEPTIONS(abi_type_exception,  "Fail to parse ABI JSON")
 
       std::cout << localized("Publishing contract...") << std::endl;
-      send_actions(std::move(actions), 1.0, packed_transaction::zlib);
+      send_actions(std::move(actions), asset(1000), packed_transaction::zlib);
       /*
       auto result = push_actions(std::move(actions), 10000, packed_transaction::zlib);
 
@@ -1431,7 +1432,7 @@ int main( int argc, char** argv ) {
 
       auto accountPermissions = get_account_permissions(tx_permission);
 
-      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}}, tx_fee_rate);
+      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}}, asset(tx_fee_rate));
    });
 
    // push transaction

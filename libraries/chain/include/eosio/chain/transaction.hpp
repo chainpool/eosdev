@@ -4,6 +4,7 @@
  */
 #pragma once
 #include <eosio/chain/types.hpp>
+#include <eosio/chain/asset.hpp>
 #include <numeric>
 
 namespace eosio { namespace chain {
@@ -125,7 +126,7 @@ namespace eosio { namespace chain {
       fc::unsigned_int       max_net_usage_words = 0UL; /// upper limit on total network bandwidth (in 8 byte words) billed for this transaction
       fc::unsigned_int       max_kcpu_usage      = 0UL; /// upper limit on the total number of kilo CPU usage units billed for this transaction
       fc::unsigned_int       delay_sec           = 0UL; /// number of seconds to delay this transaction for during which it may be canceled.
-      double                 fee_rate            = 1.0; /// fee rate, default to 1.0. If higher, transaction has more priority queue to tx pool.
+      asset                  fee_rate            = asset(1000); /// fee rate, default to 1.0. If higher, transaction has more priority queue to tx pool.
 
       /**
        * @return the absolute block number given the relative ref_block_num
@@ -152,7 +153,7 @@ namespace eosio { namespace chain {
                                                      const chain_id_type& chain_id,
                                                      const vector<bytes>& cfd = vector<bytes>(),
                                                      bool allow_duplicate_keys = false )const;
-      double                     get_transaction_fee()const;
+      asset                     get_transaction_fee()const;
       account_name               get_transaction_sender()const;
 
    };
@@ -175,7 +176,7 @@ namespace eosio { namespace chain {
       const signature_type&     sign(const private_key_type& key, const chain_id_type& chain_id);
       signature_type            sign(const private_key_type& key, const chain_id_type& chain_id)const;
       flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, bool allow_duplicate_keys = false )const;
-      double                    get_transaction_fee()const;
+      asset                    get_transaction_fee()const;
       account_name              get_transaction_sender()const;
    };
 

@@ -104,8 +104,9 @@ flat_set<public_key_type> transaction::get_signature_keys( const vector<signatur
    return recovered_pub_keys;
 } FC_CAPTURE_AND_RETHROW() }
 
-double transaction::get_transaction_fee()const {
-   return actions.size() * config::token_per_action * fee_rate;
+asset transaction::get_transaction_fee()const {
+   auto amount = actions.size() * config::token_per_action.amount * fee_rate.amount ;
+   return asset(amount);
 }
 
 account_name transaction::get_transaction_sender()const {
@@ -128,7 +129,7 @@ flat_set<public_key_type> signed_transaction::get_signature_keys( const chain_id
    return transaction::get_signature_keys(signatures, chain_id, context_free_data, allow_duplicate_keys);
 }
 
-double signed_transaction::get_transaction_fee()const {
+asset signed_transaction::get_transaction_fee()const {
    return transaction::get_transaction_fee();
 }
 
