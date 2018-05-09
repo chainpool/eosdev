@@ -779,6 +779,18 @@ static void validate_shard_locks(const vector<shard_lock>& locks, const string& 
 
 void chain_controller::__apply_block(const signed_block& next_block)
 { try {
+   auto fees = next_block.input_transactions | boost::adaptors::transformed([&](const packed_transaction& packed_tx){
+      return packed_tx.get_transaction().get_transaction_fee();
+   });
+   auto total_reward = std::accumulate(fees.begin(), fees.end(), asset(0)) + asset(90000);
+
+   auto producer_reward = asset(total_reward.amount / config::fee_rate.amount);
+   account_name producer = next_block.producer;
+   // TODO: transfer producer_reward to producer
+
+   auto pool_reward = total_reward - producer_reward;
+   // TODO: transfer pool_reward to pool.
+
    optional<fc::time_point> processing_deadline;
    if (!_currently_replaying_blocks && _limits.max_push_block_us.count() > 0) {
       processing_deadline = fc::time_point::now() + _limits.max_push_block_us;
@@ -1361,8 +1373,9 @@ void chain_controller::walk_table(const name& code, const name& scope, const nam
 }
 
 void chain_controller::validate_transaction_fee( const transaction& trx )const {
-   auto fee_rate = trx.fee_rate;
-   EOS_ASSERT(fee_rate.to_real() < 1.0, tx_invalid_fee_rate, "Fee rate must be great than or equal to 1.0");
+   auto fee_multiple = trx.fee_multiple;
+   bool fee_multiple_out_of_range = !(fee_multiple >= asset(10000) && fee_multiple <= asset(1000000));
+   EOS_ASSERT(fee_multiple_out_of_range, tx_invalid_fee_multiple, "Fee multiple must be great than or equal to 1 and less or equal to 100");
 
    auto sender = trx.get_transaction_sender();
    vector<asset> results;

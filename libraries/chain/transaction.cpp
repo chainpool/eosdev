@@ -105,7 +105,7 @@ flat_set<public_key_type> transaction::get_signature_keys( const vector<signatur
 } FC_CAPTURE_AND_RETHROW() }
 
 asset transaction::get_transaction_fee()const {
-   auto amount = actions.size() * config::token_per_action.amount * fee_rate.amount ;
+   auto amount = actions.size() * config::token_per_action.amount * fee_multiple.to_real() ;
    return asset(amount);
 }
 

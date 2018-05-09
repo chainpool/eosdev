@@ -126,7 +126,7 @@ namespace eosio { namespace chain {
       fc::unsigned_int       max_net_usage_words = 0UL; /// upper limit on total network bandwidth (in 8 byte words) billed for this transaction
       fc::unsigned_int       max_kcpu_usage      = 0UL; /// upper limit on the total number of kilo CPU usage units billed for this transaction
       fc::unsigned_int       delay_sec           = 0UL; /// number of seconds to delay this transaction for during which it may be canceled.
-      asset                  fee_rate            = asset(1000); /// fee rate, default to 1.0. If higher, transaction has more priority queue to tx pool.
+      asset                  fee_multiple        = asset(10000); /// fee rate, default to 1.0. If higher, transaction has more priority queue to tx pool.
 
       /**
        * @return the absolute block number given the relative ref_block_num

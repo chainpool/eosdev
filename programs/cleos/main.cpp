@@ -148,7 +148,7 @@ bool   tx_print_json = false;
 
 uint32_t tx_max_cpu_usage = 0;
 uint32_t tx_max_net_usage = 0;
-int64_t tx_fee_rate = 1000;
+int64_t tx_fee_multiple = 10000;
 
 vector<string> tx_permission;
 
@@ -177,7 +177,7 @@ void add_standard_transaction_options(CLI::App* cmd, string default_permission =
 
    cmd->add_option("--max-cpu-usage", tx_max_cpu_usage, localized("set an upper limit on the cpu usage budget, in instructions-retired, for the execution of the transaction (defaults to 0 which means no limit)"));
    cmd->add_option("--max-net-usage", tx_max_net_usage, localized("set an upper limit on the net usage budget, in bytes, for the transaction (defaults to 0 which means no limit)"));
-   cmd->add_option("--fee-rate", tx_fee_rate, localized("set fee rate of fee.(defaults is 1000, must be great or equal to 1000)"));
+   cmd->add_option("--fee-rate", tx_fee_multiple, localized("set fee rate of fee.(defaults is 1000, must be great or equal to 1000)"));
 }
 
 vector<chain::permission_level> get_account_permissions(const vector<string>& permissions) {
@@ -253,7 +253,7 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys) {
    trx = signed_trx.as<signed_transaction>();
 }
 
-fc::variant push_transaction( signed_transaction& trx, asset fee_rate = asset(1000), packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_transaction( signed_transaction& trx, asset fee_multiple = asset(10000), packed_transaction::compression_type compression = packed_transaction::none ) {
    auto info = get_info();
    trx.expiration = info.head_block_time + tx_expiration;
 
@@ -279,7 +279,7 @@ fc::variant push_transaction( signed_transaction& trx, asset fee_rate = asset(10
 
    trx.max_kcpu_usage = (tx_max_cpu_usage + 1023)/1024;
    trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
-   trx.fee_rate = fee_rate;
+   trx.fee_multiple = fee_multiple;
 
    if (!tx_skip_sign) {
       sign_transaction(trx, required_keys);
@@ -292,11 +292,11 @@ fc::variant push_transaction( signed_transaction& trx, asset fee_rate = asset(10
    }
 }
 
-fc::variant push_actions(std::vector<chain::action>&& actions, asset fee_rate, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_actions(std::vector<chain::action>&& actions, asset fee_multiple, packed_transaction::compression_type compression = packed_transaction::none ) {
    signed_transaction trx;
    trx.actions = std::forward<decltype(actions)>(actions);
 
-   return push_transaction(trx, fee_rate, compression);
+   return push_transaction(trx, fee_multiple, compression);
 }
 
 void print_result( const fc::variant& result ) {
@@ -336,8 +336,8 @@ void print_result( const fc::variant& result ) {
 }
 
 using std::cout;
-void send_actions(std::vector<chain::action>&& actions, asset fee_rate = asset(1000), packed_transaction::compression_type compression = packed_transaction::none ) {
-   auto result = push_actions( move(actions), fee_rate, compression);
+void send_actions(std::vector<chain::action>&& actions, asset fee_multiple = asset(10000), packed_transaction::compression_type compression = packed_transaction::none ) {
+   auto result = push_actions( move(actions), fee_multiple, compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result );
@@ -1432,7 +1432,7 @@ int main( int argc, char** argv ) {
 
       auto accountPermissions = get_account_permissions(tx_permission);
 
-      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}}, asset(tx_fee_rate));
+      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}}, asset(tx_fee_multiple));
    });
 
    // push transaction
