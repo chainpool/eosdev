@@ -451,6 +451,8 @@ namespace eosio { namespace chain {
 
          transaction _get_on_block_transaction();
          void _apply_on_block_transaction();
+         transaction _get_on_transfer_transaction(account_name sender, const vector<permission_level>& permissions, string args);
+         void _apply_on_transfer_transaction(account_name sender, const vector<permission_level>& permissions, string args);
 
          void walk_table(const name& code, const name& scope, const name& table, std::function<bool(const contracts::key_value_object& obj)> f) const;
 

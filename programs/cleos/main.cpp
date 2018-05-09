@@ -177,7 +177,7 @@ void add_standard_transaction_options(CLI::App* cmd, string default_permission =
 
    cmd->add_option("--max-cpu-usage", tx_max_cpu_usage, localized("set an upper limit on the cpu usage budget, in instructions-retired, for the execution of the transaction (defaults to 0 which means no limit)"));
    cmd->add_option("--max-net-usage", tx_max_net_usage, localized("set an upper limit on the net usage budget, in bytes, for the transaction (defaults to 0 which means no limit)"));
-   cmd->add_option("--fee-rate", tx_fee_multiple, localized("set fee rate of fee.(defaults is 1000, must be great or equal to 1000)"));
+   cmd->add_option("--fee-multiple", tx_fee_multiple, localized("set fee multiple of fee.(defaults is 1, must be great or equal to 1, and less or equal to 100.)"));
 }
 
 vector<chain::permission_level> get_account_permissions(const vector<string>& permissions) {

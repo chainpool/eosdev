@@ -17,6 +17,7 @@
 #include <eosio/chain/contracts/chain_initializer.hpp>
 #include <eosio/chain/scope_sequence_object.hpp>
 #include <eosio/chain/merkle.hpp>
+#include <eosio/chain/contracts/abi_serializer.hpp>
 
 #include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/wasm_interface.hpp>
@@ -26,6 +27,9 @@
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
 #include <fc/crypto/digest.hpp>
+#include <fc/io/json.hpp>
+#include <fc/variant.hpp>
+#include <Runtime/Runtime.h>
 
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/range/algorithm_ext/erase.hpp>
@@ -38,12 +42,32 @@
 #include <boost/range/algorithm/remove_if.hpp>
 #include <boost/range/algorithm/equal.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/format.hpp>
 
 #include <fstream>
 #include <functional>
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <string>
+#include <regex>
+
+
+fc::variant json_from_file_or_string(const std::string& file_or_str, fc::json::parse_type ptype = fc::json::legacy_parser)
+{
+   std::regex r("^[ \t]*[\{\[]");
+   if ( !regex_search(file_or_str, r) && fc::is_regular_file(file_or_str) ) {
+      return fc::json::from_file(file_or_str, ptype);
+   } else {
+      return fc::json::from_string(file_or_str, ptype);
+   }
+}
+
+bool is_allowed_action(eosio::chain::action_name act) {
+   std::set<eosio::chain::action_name> actions {N(newaccount)};
+   auto index = actions.find(act);
+   return index != actions.end();
+}
 
 namespace eosio { namespace chain {
 
@@ -296,6 +320,7 @@ transaction_trace chain_controller::push_transaction(const packed_transaction& t
 
 transaction_trace chain_controller::_push_transaction(const packed_transaction& packed_trx)
 { try {
+      ilog("_push_transaction packeg tx");
    //edump((transaction_header(packed_trx.get_transaction())));
    auto start = fc::time_point::now();
    transaction_metadata   mtrx( packed_trx, get_chain_id(), head_block_time());
@@ -304,7 +329,13 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
    const transaction& trx = mtrx.trx();
    mtrx.delay =  fc::seconds(trx.delay_sec);
 
-   validate_transaction_fee(trx);
+   ilog("validate tx in packed tx");
+   std::for_each(trx.actions.begin(), trx.actions.end(), [=](const action& act){
+      if(::is_allowed_action(act.name)){
+         validate_transaction_fee(trx);
+      }
+   });
+
    validate_transaction_with_minimal_state( trx, mtrx.billable_packed_size );
    validate_expiration_not_too_far(trx, head_block_time() + mtrx.delay);
    validate_referenced_accounts(trx);
@@ -324,6 +355,23 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
    auto setup_us = fc::time_point::now() - start;
 
    transaction_trace result(mtrx.id);
+
+   auto transaction_fee = packed_trx.get_transaction().get_transaction_fee();
+   account_name sender = packed_trx.get_transaction().get_transaction_sender();
+   ilog("sender is ${s}", ("s", sender));
+   auto actions = packed_trx.get_transaction().actions;
+   if(sender != N(eosio)) {
+      if(!actions.empty()) {
+         auto action = actions.at(0);
+         if(::is_allowed_action(action.name)) {
+            auto perms = action.authorization;
+            auto format_args = boost::format("{\"from\":\"%1%\", \"to\":\"eosio\", \"quantity\":\"%2%\", \"memo\":\"\" }") % sender % transaction_fee;
+            auto args = format_args.str();
+            ilog("transaction args is ${arg}", ("arg", args));
+            _apply_on_transfer_transaction(sender, perms, args);
+         }
+      }
+   }
 
    if( mtrx.delay.count() == 0 ) {
       result = _push_transaction( std::move(mtrx) );
@@ -345,13 +393,15 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
 
 transaction_trace chain_controller::_push_transaction( transaction_metadata&& data )
 { try {
+      ilog("_push_transaction metadata");
    auto process_apply_transaction = [this](transaction_metadata& meta) {
       auto cyclenum = _pending_block->regions.back().cycles_summary.size() - 1;
       //wdump((transaction_header(meta.trx())));
 
       const auto& trx = meta.trx();
+      ilog("validate tx in meta");
 
-      validate_transaction_fee(trx);
+      //validate_transaction_fee(trx);
       // Validate uniqueness and expiration again
       validate_uniqueness(trx);
       validate_not_expired(trx);
@@ -504,6 +554,49 @@ transaction chain_controller::_get_on_block_transaction()
 void chain_controller::_apply_on_block_transaction()
 {
    _pending_block_trace->implicit_transactions.emplace_back(_get_on_block_transaction());
+   transaction_metadata mtrx(packed_transaction(_pending_block_trace->implicit_transactions.back()), get_chain_id(), head_block_time(), optional<time_point>(), true /*is implicit*/);
+   _push_transaction(std::move(mtrx));
+}
+
+transaction chain_controller::_get_on_transfer_transaction(account_name sender, const vector<permission_level>& permissions, string args)
+{
+   fc::variant action_args_var;
+   try {
+      action_args_var = ::json_from_file_or_string(args, fc::json::relaxed_parser);
+   } EOS_RETHROW_EXCEPTIONS(action_type_exception, "Fail to parse action JSON data='${data}'", ("data",args))
+
+   ilog("action_args_var is ${arg}", ("arg", action_args_var));
+
+   bytes data;
+   const auto code_account = _db.find<account_object,by_name>( N(eosio.token) );
+   EOS_ASSERT(code_account != nullptr, contract_query_exception, "Contract can't be found ${contract}", ("contract", N(eosio.token)));
+
+   contracts::abi_def abi;
+   if( contracts::abi_serializer::to_abi(code_account->abi, abi) ) {
+      contracts::abi_serializer abis( abi );
+      try {
+         data = abis.variant_to_binary(abis.get_action_type(N(transfer)), action_args_var);
+      } EOS_RETHROW_EXCEPTIONS(chain::invalid_action_args_exception,
+                                "'${args}' is invalid args for action '${action}' code '${code}'",
+                                ("args", action_args_var)("action", N(transfer))("code", N(eosio.token)))
+   }
+
+   action on_transfer_act;
+   on_transfer_act.account = N(eosio.token);
+   on_transfer_act.name = N(transfer);
+   on_transfer_act.authorization = permissions;
+   on_transfer_act.data = data;
+
+   transaction trx;
+   trx.actions.emplace_back(std::move(on_transfer_act));
+   trx.set_reference_block(head_block_id());
+   trx.expiration = head_block_time() + fc::seconds(1);
+   return trx;
+}
+
+void chain_controller::_apply_on_transfer_transaction(account_name sender, const vector<permission_level>& permissions, string args)
+{
+   _pending_block_trace->implicit_transactions.emplace_back(_get_on_transfer_transaction(sender, permissions, args));
    transaction_metadata mtrx(packed_transaction(_pending_block_trace->implicit_transactions.back()), get_chain_id(), head_block_time(), optional<time_point>(), true /*is implicit*/);
    _push_transaction(std::move(mtrx));
 }
@@ -1373,13 +1466,20 @@ void chain_controller::walk_table(const name& code, const name& scope, const nam
 }
 
 void chain_controller::validate_transaction_fee( const transaction& trx )const {
+   std::for_each(trx.actions.begin(), trx.actions.end(), [](const action& act){
+      ilog("Account name is ${n}, action name is ${act}", ("n", act.account)("act",act.name));
+   });
+   if(trx.get_transaction_sender() == N(eosio)) {
+      return;
+   }
+
    auto fee_multiple = trx.fee_multiple;
-   bool fee_multiple_out_of_range = !(fee_multiple >= asset(10000) && fee_multiple <= asset(1000000));
+   bool fee_multiple_out_of_range = (fee_multiple >= asset(10000)) && (fee_multiple <= asset(1000000));
    EOS_ASSERT(fee_multiple_out_of_range, tx_invalid_fee_multiple, "Fee multiple must be great than or equal to 1 and less or equal to 100");
 
    auto sender = trx.get_transaction_sender();
    vector<asset> results;
-   walk_table(N(token), sender, N(accounts), [&](const contracts::key_value_object& obj){
+   walk_table(N(eosio.token), sender, N(accounts), [&](const contracts::key_value_object& obj){
 
       EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
 
@@ -1397,7 +1497,10 @@ void chain_controller::validate_transaction_fee( const transaction& trx )const {
       return !(boost::iequals(cursor.symbol_name(), "EOS"));
    });
 
-   auto balance = results.at(0);
+   auto balance = asset(0);
+   if(!results.empty()) {
+      balance = results.at(0);
+   }
 
    // calculate all fee needed by trx sender.
    auto fees = _pending_block->input_transactions | boost::adaptors::filtered([&](const packed_transaction& packed_tx){
@@ -1407,8 +1510,8 @@ void chain_controller::validate_transaction_fee( const transaction& trx )const {
        return packed_tx.get_transaction().get_transaction_fee();
    });
    auto fee = std::accumulate(fees.begin(), fees.end(), asset(0)) + trx.get_transaction_fee();
-   bool has_enough_fee = balance < fee;
-   EOS_ASSERT(!has_enough_fee, tx_not_enough_fee, "Transaction fee not enough.");
+   bool has_enough_fee = !(balance < fee);
+   EOS_ASSERT(has_enough_fee, tx_not_enough_fee, "Transaction fee not enough.");
 }
 
 void chain_controller::record_transaction(const transaction& trx)

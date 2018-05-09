@@ -154,7 +154,7 @@ namespace eosio { namespace chain {
                                                      const vector<bytes>& cfd = vector<bytes>(),
                                                      bool allow_duplicate_keys = false )const;
       asset                     get_transaction_fee()const;
-      account_name               get_transaction_sender()const;
+      account_name              get_transaction_sender()const;
 
    };
 

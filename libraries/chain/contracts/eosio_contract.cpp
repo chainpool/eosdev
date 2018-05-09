@@ -37,6 +37,7 @@ void validate_authority_precondition( const apply_context& context, const author
  *  This method is called assuming precondition_system_newaccount succeeds a
  */
 void apply_eosio_newaccount(apply_context& context) {
+    ilog("apply_eosio_newaccount");
    auto create = context.act.data_as<newaccount>();
    try {
    context.require_authorization(create.creator);
@@ -345,7 +346,7 @@ void apply_eosio_linkauth(apply_context& context) {
 
 void apply_eosio_unlinkauth(apply_context& context) {
    context.require_write_lock( config::eosio_auth_scope );
-   
+
    auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
    auto& db = context.mutable_db;
    auto unlink = context.act.data_as<unlinkauth>();
