@@ -320,7 +320,7 @@ transaction_trace chain_controller::push_transaction(const packed_transaction& t
 
 transaction_trace chain_controller::_push_transaction(const packed_transaction& packed_trx)
 { try {
-      ilog("_push_transaction packeg tx");
+   ilog("_push_transaction packeg tx");
    //edump((transaction_header(packed_trx.get_transaction())));
    auto start = fc::time_point::now();
    transaction_metadata   mtrx( packed_trx, get_chain_id(), head_block_time());
@@ -330,7 +330,7 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
    mtrx.delay =  fc::seconds(trx.delay_sec);
 
    ilog("validate tx in packed tx");
-   std::for_each(trx.actions.begin(), trx.actions.end(), [=](const action& act){
+   std::for_each(trx.actions.begin(), trx.actions.end(), [&](const action& act){
       if(::is_allowed_action(act.name)){
          validate_transaction_fee(trx);
       }
@@ -376,7 +376,6 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
    if( mtrx.delay.count() == 0 ) {
       result = _push_transaction( std::move(mtrx) );
    } else {
-
       result = wrap_transaction_processing( std::move(mtrx),
                                             [this](transaction_metadata& meta) { return delayed_transaction_processing(meta); } );
    }
@@ -385,6 +384,12 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
    on_pending_transaction(_pending_transaction_metas.back(), packed_trx);
 
    _pending_block->input_transactions.emplace_back(packed_trx);
+   // Use std::stableSort ?
+   std::sort(_pending_block->input_transactions.begin(), _pending_block->input_transactions.end(), [](const auto& first, const auto& second){
+      auto fisrt_multiple_level = first.get_transaction().get_transaction_multiple_level();
+      auto second_multiple_level = second.get_transaction().get_transaction_multiple_level();
+      return fisrt_multiple_level > second_multiple_level;
+   });
 
    result._setup_profiling_us = setup_us;
    return result;
@@ -1473,7 +1478,7 @@ void chain_controller::validate_transaction_fee( const transaction& trx )const {
       return;
    }
 
-   auto fee_multiple = trx.fee_multiple;
+   auto fee_multiple = trx.get_transaction_multiple_level();
    bool fee_multiple_out_of_range = (fee_multiple >= asset(10000)) && (fee_multiple <= asset(1000000));
    EOS_ASSERT(fee_multiple_out_of_range, tx_invalid_fee_multiple, "Fee multiple must be great than or equal to 1 and less or equal to 100");
 

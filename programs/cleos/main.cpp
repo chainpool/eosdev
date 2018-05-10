@@ -253,7 +253,7 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys) {
    trx = signed_trx.as<signed_transaction>();
 }
 
-fc::variant push_transaction( signed_transaction& trx, asset fee_multiple = asset(10000), packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_transaction( signed_transaction& trx, packed_transaction::compression_type compression = packed_transaction::none ) {
    auto info = get_info();
    trx.expiration = info.head_block_time + tx_expiration;
 
@@ -279,7 +279,6 @@ fc::variant push_transaction( signed_transaction& trx, asset fee_multiple = asse
 
    trx.max_kcpu_usage = (tx_max_cpu_usage + 1023)/1024;
    trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
-   trx.fee_multiple = fee_multiple;
 
    if (!tx_skip_sign) {
       sign_transaction(trx, required_keys);
@@ -292,11 +291,11 @@ fc::variant push_transaction( signed_transaction& trx, asset fee_multiple = asse
    }
 }
 
-fc::variant push_actions(std::vector<chain::action>&& actions, asset fee_multiple, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::none ) {
    signed_transaction trx;
    trx.actions = std::forward<decltype(actions)>(actions);
 
-   return push_transaction(trx, fee_multiple, compression);
+   return push_transaction(trx, compression);
 }
 
 void print_result( const fc::variant& result ) {
@@ -336,8 +335,8 @@ void print_result( const fc::variant& result ) {
 }
 
 using std::cout;
-void send_actions(std::vector<chain::action>&& actions, asset fee_multiple = asset(10000), packed_transaction::compression_type compression = packed_transaction::none ) {
-   auto result = push_actions( move(actions), fee_multiple, compression);
+void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::none ) {
+   auto result = push_actions( move(actions), compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result );
@@ -346,8 +345,8 @@ void send_actions(std::vector<chain::action>&& actions, asset fee_multiple = ass
    }
 }
 
-void send_transaction( signed_transaction& trx, asset transaction_fee, packed_transaction::compression_type compression = packed_transaction::none  ) {
-   auto result = push_transaction(trx, transaction_fee, compression);
+void send_transaction( signed_transaction& trx, packed_transaction::compression_type compression = packed_transaction::none  ) {
+   auto result = push_transaction(trx, compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result );
@@ -1199,7 +1198,7 @@ int main( int argc, char** argv ) {
       } EOS_RETHROW_EXCEPTIONS(abi_type_exception,  "Fail to parse ABI JSON")
 
       std::cout << localized("Publishing contract...") << std::endl;
-      send_actions(std::move(actions), asset(1000), packed_transaction::zlib);
+      send_actions(std::move(actions), packed_transaction::zlib);
       /*
       auto result = push_actions(std::move(actions), 10000, packed_transaction::zlib);
 
@@ -1432,7 +1431,7 @@ int main( int argc, char** argv ) {
 
       auto accountPermissions = get_account_permissions(tx_permission);
 
-      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}}, asset(tx_fee_multiple));
+      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>(), asset(tx_fee_multiple)}});
    });
 
    // push transaction

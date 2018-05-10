@@ -44,6 +44,8 @@ namespace eosio { namespace chain {
       vector<permission_level>   authorization;
       bytes                      data;
 
+      asset                      fee_multiple = asset(10000); /// fee rate, default to 1.0. If higher, transaction has more priority queue to tx pool.
+
       action(){}
 
       template<typename T, std::enable_if_t<std::is_base_of<bytes, T>::value, int> = 1>
@@ -62,8 +64,8 @@ namespace eosio { namespace chain {
          data        = fc::raw::pack(value);
       }
 
-      action( vector<permission_level> auth, account_name account, action_name name, const bytes& data )
-            : account(account), name(name), authorization(move(auth)), data(data) {
+      action( vector<permission_level> auth, account_name account, action_name name, const bytes& data, asset fee_multiple = asset(10000) )
+            : account(account), name(name), authorization(move(auth)), data(data), fee_multiple(fee_multiple) {
       }
 
       template<typename T>
@@ -126,7 +128,6 @@ namespace eosio { namespace chain {
       fc::unsigned_int       max_net_usage_words = 0UL; /// upper limit on total network bandwidth (in 8 byte words) billed for this transaction
       fc::unsigned_int       max_kcpu_usage      = 0UL; /// upper limit on the total number of kilo CPU usage units billed for this transaction
       fc::unsigned_int       delay_sec           = 0UL; /// number of seconds to delay this transaction for during which it may be canceled.
-      asset                  fee_multiple        = asset(10000); /// fee rate, default to 1.0. If higher, transaction has more priority queue to tx pool.
 
       /**
        * @return the absolute block number given the relative ref_block_num
@@ -155,7 +156,7 @@ namespace eosio { namespace chain {
                                                      bool allow_duplicate_keys = false )const;
       asset                     get_transaction_fee()const;
       account_name              get_transaction_sender()const;
-
+      asset                     get_transaction_multiple_level()const;
    };
 
    struct signed_transaction : public transaction
@@ -176,8 +177,9 @@ namespace eosio { namespace chain {
       const signature_type&     sign(const private_key_type& key, const chain_id_type& chain_id);
       signature_type            sign(const private_key_type& key, const chain_id_type& chain_id)const;
       flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, bool allow_duplicate_keys = false )const;
-      asset                    get_transaction_fee()const;
+      asset                     get_transaction_fee()const;
       account_name              get_transaction_sender()const;
+      asset                     get_transaction_multiple_level()const;
    };
 
    struct packed_transaction {

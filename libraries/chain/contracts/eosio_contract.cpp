@@ -37,7 +37,6 @@ void validate_authority_precondition( const apply_context& context, const author
  *  This method is called assuming precondition_system_newaccount succeeds a
  */
 void apply_eosio_newaccount(apply_context& context) {
-    ilog("apply_eosio_newaccount");
    auto create = context.act.data_as<newaccount>();
    try {
    context.require_authorization(create.creator);
