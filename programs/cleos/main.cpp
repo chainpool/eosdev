@@ -177,7 +177,7 @@ void add_standard_transaction_options(CLI::App* cmd, string default_permission =
 
    cmd->add_option("--max-cpu-usage", tx_max_cpu_usage, localized("set an upper limit on the cpu usage budget, in instructions-retired, for the execution of the transaction (defaults to 0 which means no limit)"));
    cmd->add_option("--max-net-usage", tx_max_net_usage, localized("set an upper limit on the net usage budget, in bytes, for the transaction (defaults to 0 which means no limit)"));
-   cmd->add_option("--fee-multiple", tx_fee_multiple, localized("set fee multiple of fee.(defaults is 1, must be great or equal to 1, and less or equal to 100.)"));
+   cmd->add_option("-m,--fee-multiple", tx_fee_multiple, localized("set fee multiple of fee.(defaults is 1, must be great or equal to 1, and less or equal to 100.)"));
 }
 
 vector<chain::permission_level> get_account_permissions(const vector<string>& permissions) {
@@ -253,7 +253,7 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys) {
    trx = signed_trx.as<signed_transaction>();
 }
 
-fc::variant push_transaction( signed_transaction& trx, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_transaction( signed_transaction& trx, int64_t multiple_level, packed_transaction::compression_type compression = packed_transaction::none ) {
    auto info = get_info();
    trx.expiration = info.head_block_time + tx_expiration;
 
@@ -279,6 +279,7 @@ fc::variant push_transaction( signed_transaction& trx, packed_transaction::compr
 
    trx.max_kcpu_usage = (tx_max_cpu_usage + 1023)/1024;
    trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
+   trx.fee_multiple_level = multiple_level;
 
    if (!tx_skip_sign) {
       sign_transaction(trx, required_keys);
@@ -291,11 +292,11 @@ fc::variant push_transaction( signed_transaction& trx, packed_transaction::compr
    }
 }
 
-fc::variant push_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::none ) {
+fc::variant push_actions(std::vector<chain::action>&& actions, int64_t multiple_level, packed_transaction::compression_type compression = packed_transaction::none ) {
    signed_transaction trx;
    trx.actions = std::forward<decltype(actions)>(actions);
 
-   return push_transaction(trx, compression);
+   return push_transaction(trx, multiple_level, compression);
 }
 
 void print_result( const fc::variant& result ) {
@@ -335,8 +336,9 @@ void print_result( const fc::variant& result ) {
 }
 
 using std::cout;
-void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::none ) {
-   auto result = push_actions( move(actions), compression);
+void send_actions(std::vector<chain::action>&& actions, int64_t multiple_level = 10000, packed_transaction::compression_type compression = packed_transaction::none ) {
+   ilog("send_actions mlevel is ${m}", ("m", multiple_level));
+   auto result = push_actions( move(actions), multiple_level, compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result );
@@ -345,8 +347,8 @@ void send_actions(std::vector<chain::action>&& actions, packed_transaction::comp
    }
 }
 
-void send_transaction( signed_transaction& trx, packed_transaction::compression_type compression = packed_transaction::none  ) {
-   auto result = push_transaction(trx, compression);
+void send_transaction( signed_transaction& trx, int64_t fee_multiple_level, packed_transaction::compression_type compression = packed_transaction::none  ) {
+   auto result = push_transaction(trx, fee_multiple_level, compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result );
@@ -915,7 +917,8 @@ int main( int argc, char** argv ) {
       try {
          active_key = public_key_type(active_key_str);
       } EOS_RETHROW_EXCEPTIONS(public_key_type_exception, "Invalid active public key: ${public_key}", ("public_key", active_key_str))
-      send_actions({create_newaccount(creator, account_name, owner_key, active_key)});
+      ilog(" createAccount tx_fee_multiple is ${f}", ("f", tx_fee_multiple));
+      send_actions({create_newaccount(creator, account_name, owner_key, active_key)}, tx_fee_multiple);
    });
 
    // Get subcommand
@@ -1198,7 +1201,7 @@ int main( int argc, char** argv ) {
       } EOS_RETHROW_EXCEPTIONS(abi_type_exception,  "Fail to parse ABI JSON")
 
       std::cout << localized("Publishing contract...") << std::endl;
-      send_actions(std::move(actions), packed_transaction::zlib);
+      send_actions(std::move(actions), tx_fee_multiple, packed_transaction::zlib);
       /*
       auto result = push_actions(std::move(actions), 10000, packed_transaction::zlib);
 
@@ -1430,8 +1433,8 @@ int main( int argc, char** argv ) {
       auto result = call(json_to_bin_func, arg);
 
       auto accountPermissions = get_account_permissions(tx_permission);
-
-      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>(), asset(tx_fee_multiple)}});
+      ilog("tx_fee_multiple is ${f}", ("f", tx_fee_multiple));
+      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}});
    });
 
    // push transaction
@@ -1553,6 +1556,7 @@ int main( int argc, char** argv ) {
       trx.ref_block_prefix = 0;
       trx.max_net_usage_words = 0;
       trx.max_kcpu_usage = 0;
+      trx.fee_multiple_level = 0;
       trx.delay_sec = 0;
       trx.actions = { chain::action(trxperm, name(proposed_contract), name(proposed_action), proposed_trx_serialized) };
 

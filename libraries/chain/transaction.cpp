@@ -105,7 +105,8 @@ flat_set<public_key_type> transaction::get_signature_keys( const vector<signatur
 } FC_CAPTURE_AND_RETHROW() }
 
 asset transaction::get_transaction_fee()const {
-   auto amount = actions.size() * config::token_per_action.amount * get_transaction_multiple_level().to_real() ;
+   ilog("get_transaction_fee multiple level ${m}", ("m", fee_multiple_level));
+   auto amount = actions.size() * config::token_per_action.amount * asset(fee_multiple_level).to_real() ;
    return asset(amount);
 }
 
@@ -113,11 +114,6 @@ account_name transaction::get_transaction_sender()const {
    auto action = actions.at(0);
    auto perm_level = action.authorization.at(0);
    return perm_level.actor;
-}
-
-asset transaction::get_transaction_multiple_level()const {
-   auto action = actions.at(0);
-   return action.fee_multiple;
 }
 
 const signature_type& signed_transaction::sign(const private_key_type& key, const chain_id_type& chain_id) {
@@ -140,10 +136,6 @@ asset signed_transaction::get_transaction_fee()const {
 
 account_name signed_transaction::get_transaction_sender()const {
    return transaction::get_transaction_sender();
-}
-
-asset signed_transaction::get_transaction_multiple_level()const {
-   return transaction::get_transaction_multiple_level();
 }
 
 uint32_t packed_transaction::get_billable_size()const {

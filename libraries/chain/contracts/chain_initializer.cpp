@@ -236,6 +236,7 @@ abi_def chain_initializer::eos_contract_abi(const abi_def& eosio_system_abi)
          {"region", "uint16"},
          {"ref_block_num", "uint16"},
          {"ref_block_prefix", "uint32"},
+         {"fee_multiple_level", "uint32"},
          {"max_net_usage_words", "varuint32"},
          {"max_kcpu_usage", "varuint32"},
          {"delay_sec", "varuint32"}

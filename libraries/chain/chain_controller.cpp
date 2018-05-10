@@ -386,8 +386,8 @@ transaction_trace chain_controller::_push_transaction(const packed_transaction& 
    _pending_block->input_transactions.emplace_back(packed_trx);
    // Use std::stableSort ?
    std::sort(_pending_block->input_transactions.begin(), _pending_block->input_transactions.end(), [](const auto& first, const auto& second){
-      auto fisrt_multiple_level = first.get_transaction().get_transaction_multiple_level();
-      auto second_multiple_level = second.get_transaction().get_transaction_multiple_level();
+      auto fisrt_multiple_level = first.get_transaction().fee_multiple_level;
+      auto second_multiple_level = second.get_transaction().fee_multiple_level;
       return fisrt_multiple_level > second_multiple_level;
    });
 
@@ -882,9 +882,15 @@ void chain_controller::__apply_block(const signed_block& next_block)
    });
    auto total_reward = std::accumulate(fees.begin(), fees.end(), asset(0)) + asset(90000);
 
-   auto producer_reward = asset(total_reward.amount / config::fee_rate.amount);
+   auto producer_reward = asset(total_reward.amount * config::fee_rate.to_real());
    account_name producer = next_block.producer;
+   ilog("producer is ${p}", ("p", producer));
    // TODO: transfer producer_reward to producer
+   auto perms = vector<permission_level>{{config::system_account_name, config::active_name}};
+   auto format_args = boost::format("{\"from\":\"eosio\", \"to\":\"%1%\", \"quantity\":\"%2%\", \"memo\":\"\" }") % producer % producer_reward;
+   auto args = format_args.str();
+   ilog("transaction args is ${arg}", ("arg", args));
+   _apply_on_transfer_transaction(config::system_account_name, perms, args);
 
    auto pool_reward = total_reward - producer_reward;
    // TODO: transfer pool_reward to pool.
@@ -1478,7 +1484,8 @@ void chain_controller::validate_transaction_fee( const transaction& trx )const {
       return;
    }
 
-   auto fee_multiple = trx.get_transaction_multiple_level();
+   auto fee_multiple = asset(trx.fee_multiple_level);
+   ilog("fee multiple is ${f}", ("f", fee_multiple));
    bool fee_multiple_out_of_range = (fee_multiple >= asset(10000)) && (fee_multiple <= asset(1000000));
    EOS_ASSERT(fee_multiple_out_of_range, tx_invalid_fee_multiple, "Fee multiple must be great than or equal to 1 and less or equal to 100");
 
