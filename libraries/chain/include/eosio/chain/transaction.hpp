@@ -8,6 +8,9 @@
 #include <numeric>
 
 namespace eosio { namespace chain {
+   bool is_allowed_action(eosio::chain::action_name act);
+
+   asset feerate_by_allowed_action(eosio::chain::action_name act);
 
    struct permission_level {
       account_name    actor;

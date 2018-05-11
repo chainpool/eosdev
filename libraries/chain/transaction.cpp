@@ -19,6 +19,23 @@
 
 
 namespace eosio { namespace chain {
+   static const std::map<eosio::chain::action_name, asset> fee_by_actions = {
+      {N(newaccount), asset(2000)}, {N(transfer), asset(1000)}
+   };
+
+   bool is_allowed_action(eosio::chain::action_name act) {
+      auto index = fee_by_actions.find(act);
+      return index != fee_by_actions.end();
+   }
+
+   asset feerate_by_allowed_action(eosio::chain::action_name act) {
+      auto fee = asset(0);
+      auto index = fee_by_actions.find(act);
+      if(index != fee_by_actions.end()) {
+         fee = index->second;
+      }
+      return fee;
+   }
 
 using namespace boost::multi_index;
 
@@ -105,9 +122,16 @@ flat_set<public_key_type> transaction::get_signature_keys( const vector<signatur
 } FC_CAPTURE_AND_RETHROW() }
 
 asset transaction::get_transaction_fee()const {
-   ilog("get_transaction_fee multiple level ${m}", ("m", fee_multiple_level));
-   auto amount = actions.size() * config::token_per_action.amount * asset(fee_multiple_level).to_real() ;
-   return asset(amount);
+   // ilog("get_transaction_fee multiple level ${m}", ("m", fee_multiple_level));
+   // auto amount = actions.size() * config::token_per_action.amount * asset(fee_multiple_level).to_real() ;
+   // return asset(amount);
+   auto fees_of_actions = actions | boost::adaptors::transformed([&](const action& act){
+      auto feerate = feerate_by_allowed_action(act.name).amount;
+      auto fee_per_action = asset(feerate * asset(fee_multiple_level).to_real());
+      return fee_per_action;
+   });
+   auto amount = std::accumulate(fees_of_actions.begin(), fees_of_actions.end(), asset(0));
+   return amount;
 }
 
 account_name transaction::get_transaction_sender()const {
