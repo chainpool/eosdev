@@ -330,7 +330,7 @@ const contracts::table_id_object& apply_context::find_or_create_table( name code
 
    require_write_lock(scope);
 
-   //update_db_usage(payer, config::billable_size_v<contracts::table_id_object>);
+   update_db_usage(payer, config::billable_size_v<contracts::table_id_object>);
 
    return mutable_db.create<contracts::table_id_object>([&](contracts::table_id_object &t_id){
       t_id.code = code;
@@ -341,7 +341,7 @@ const contracts::table_id_object& apply_context::find_or_create_table( name code
 }
 
 void apply_context::remove_table( const contracts::table_id_object& tid ) {
-   //update_db_usage(tid.payer, - config::billable_size_v<contracts::table_id_object>);
+   update_db_usage(tid.payer, - config::billable_size_v<contracts::table_id_object>);
    mutable_db.remove(tid);
 }
 
@@ -382,7 +382,6 @@ const bytes& apply_context::get_packed_transaction() {
    return trx_meta.packed_trx;
 }
 
-/*
 void apply_context::update_db_usage( const account_name& payer, int64_t delta ) {
    require_write_lock( payer );
    if( (delta > 0) ) {
@@ -392,7 +391,7 @@ void apply_context::update_db_usage( const account_name& payer, int64_t delta ) 
 
       mutable_controller.get_mutable_resource_limits_manager().add_pending_account_ram_usage(payer, delta);
    }
-}*/
+}
 
 
 int apply_context::get_action( uint32_t type, uint32_t index, char* buffer, size_t buffer_size )const
@@ -471,10 +470,8 @@ int apply_context::db_store_i64( uint64_t code, uint64_t scope, uint64_t table, 
      ++t.count;
    });
 
-/*
    int64_t billable_size = (int64_t)(buffer_size + config::billable_size_v<key_value_object>);
    update_db_usage( payer, billable_size);
-*/
 
    keyval_cache.cache_table( tab );
    return keyval_cache.add( obj );
@@ -494,7 +491,6 @@ void apply_context::db_update_i64( int iterator, account_name payer, const char*
 
    if( payer == account_name() ) payer = obj.payer;
 
-/*
    if( account_name(obj.payer) != payer ) {
       // refund the existing payer
       update_db_usage( obj.payer,  -(old_size) );
@@ -504,7 +500,6 @@ void apply_context::db_update_i64( int iterator, account_name payer, const char*
       // charge/refund the existing payer the difference
       update_db_usage( obj.payer, new_size - old_size);
    }
-*/
 
    mutable_db.modify( obj, [&]( auto& o ) {
      o.value.resize( buffer_size );
@@ -521,7 +516,7 @@ void apply_context::db_remove_i64( int iterator ) {
 
    require_write_lock( table_obj.scope );
 
-   //update_db_usage( obj.payer,  -(obj.value.size() + config::billable_size_v<key_value_object>) );
+   update_db_usage( obj.payer,  -(obj.value.size() + config::billable_size_v<key_value_object>) );
 
    mutable_db.modify( table_obj, [&]( auto& t ) {
       --t.count;

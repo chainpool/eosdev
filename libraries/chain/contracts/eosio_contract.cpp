@@ -41,7 +41,7 @@ void apply_eosio_newaccount(apply_context& context) {
    try {
    context.require_authorization(create.creator);
    context.require_write_lock( config::eosio_auth_scope );
-  // auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
+   auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
 
    EOS_ASSERT( validate(create.owner), action_validate_exception, "Invalid owner authority");
    EOS_ASSERT( validate(create.active), action_validate_exception, "Invalid active authority");
@@ -74,13 +74,13 @@ void apply_eosio_newaccount(apply_context& context) {
       a.name = create.name;
       a.creation_date = context.controller.head_block_time();
    });
-   /*resources.initialize_account(create.name);
+   resources.initialize_account(create.name);
    resources.add_pending_account_ram_usage(
       create.creator,
       (int64_t)config::overhead_per_account_ram_bytes
-   );*/
+   );
 
-   auto create_permission = [owner=create.name, &db, &context/*, &resources*/](const permission_name& name, permission_object::id_type parent, authority &&auth) {
+   auto create_permission = [owner=create.name, &db, &context, &resources](const permission_name& name, permission_object::id_type parent, authority &&auth) {
       const auto& result = db.create<permission_object>([&](permission_object& p) {
          p.name = name;
          p.parent = parent;
@@ -88,10 +88,10 @@ void apply_eosio_newaccount(apply_context& context) {
          p.auth = std::move(auth);
       });
 
- /*     resources.add_pending_account_ram_usage(
+      resources.add_pending_account_ram_usage(
          owner,
          (int64_t)(config::billable_size_v<permission_object> + result.auth.get_billable_size())
-      );*/
+      );
 
       return result;
    };
@@ -105,7 +105,7 @@ void apply_eosio_newaccount(apply_context& context) {
 
 void apply_eosio_setcode(apply_context& context) {
    auto& db = context.mutable_db;
-   //auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
+   auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
    auto  act = context.act.data_as<setcode>();
    context.require_authorization(act.account);
    context.require_write_lock( config::eosio_auth_scope );
@@ -138,17 +138,17 @@ void apply_eosio_setcode(apply_context& context) {
 
    });
 
-   /*if (new_size != old_size) {
+   if (new_size != old_size) {
       resources.add_pending_account_ram_usage(
          act.account,
          new_size - old_size
       );
-   }*/
+   }
 }
 
 void apply_eosio_setabi(apply_context& context) {
    auto& db = context.mutable_db;
-   //auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
+   auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
    auto  act = context.act.data_as<setabi>();
 
    context.require_authorization(act.account);
@@ -171,15 +171,14 @@ void apply_eosio_setabi(apply_context& context) {
       a.set_abi( act.abi );
    });
 
-   /*if (new_size != old_size) {
+   if (new_size != old_size) {
       resources.add_pending_account_ram_usage(
          act.account,
          new_size - old_size
       );
-   }*/
+   }
 }
 
-/*
 void apply_eosio_updateauth(apply_context& context) {
    context.require_write_lock( config::eosio_auth_scope );
 
@@ -363,7 +362,7 @@ void apply_eosio_unlinkauth(apply_context& context) {
    db.remove(*link);
 }
 
-*/
+
 void apply_eosio_onerror(apply_context& context) {
    FC_ASSERT(context.trx_meta.sender.valid(), "onerror action cannot be called directly");
    context.require_recipient(*context.trx_meta.sender);
@@ -378,7 +377,6 @@ static const abi_serializer& get_abi_serializer() {
    return *_abi_serializer;
 }
 
-/*
 static optional<variant> get_pending_recovery(apply_context& context, account_name account ) {
    const uint64_t id = account;
    const auto table = N(recovery);
@@ -565,6 +563,6 @@ void apply_eosio_canceldelay(apply_context& context) {
    FC_ASSERT (found, "canceling_auth in canceldelay action was not found as authorization in the original delayed transaction");
 
    context.cancel_deferred(context.controller.transaction_id_to_sender_id(trx_id));
-}*/
+}
 
 } } } // namespace eosio::chain::contracts

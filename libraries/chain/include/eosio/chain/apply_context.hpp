@@ -200,7 +200,7 @@ class apply_context {
                  ++t.count;
                });
 
-               //context.update_db_usage( payer, config::billable_size_v<ObjectType> );
+               context.update_db_usage( payer, config::billable_size_v<ObjectType> );
 
                itr_cache.cache_table( tab );
                return itr_cache.add( obj );
@@ -208,7 +208,7 @@ class apply_context {
 
             void remove( int iterator ) {
                const auto& obj = itr_cache.get( iterator );
-               //context.update_db_usage( obj.payer, -( config::billable_size_v<ObjectType> ) );
+               context.update_db_usage( obj.payer, -( config::billable_size_v<ObjectType> ) );
 
                const auto& table_obj = itr_cache.get_table( obj.t_id );
                FC_ASSERT( table_obj.code == context.receiver, "db access violation" );
@@ -238,11 +238,11 @@ class apply_context {
                if( payer == account_name() ) payer = obj.payer;
 
                int64_t billing_size =  config::billable_size_v<ObjectType>;
-/*
+
                if( obj.payer != payer ) {
                   context.update_db_usage( obj.payer, -(billing_size) );
                   context.update_db_usage( payer, +(billing_size) );
-               }*/
+               }
 
                context.mutable_db.modify( obj, [&]( auto& o ) {
                  secondary_key_helper_t::set(o.secondary_key, secondary);
@@ -566,7 +566,7 @@ class apply_context {
       int get_action( uint32_t type, uint32_t index, char* buffer, size_t buffer_size )const;
       int get_context_free_data( uint32_t index, char* buffer, size_t buffer_size )const;
 
-      //void update_db_usage( const account_name& payer, int64_t delta );
+      void update_db_usage( const account_name& payer, int64_t delta );
       void check_auth( const transaction& trx, const vector<permission_level>& perm );
 
       int  db_store_i64( uint64_t scope, uint64_t table, const account_name& payer, uint64_t id, const char* buffer, size_t buffer_size );

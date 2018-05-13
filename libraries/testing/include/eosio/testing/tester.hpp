@@ -99,14 +99,14 @@ namespace eosio { namespace testing {
          void                 push_genesis_block();
          producer_schedule_type  set_producers(const vector<account_name>& producer_names, const uint32_t version = 0);
 
-         //void link_authority( account_name account, account_name code,  permission_name req, action_name type = "" );
-         //void unlink_authority( account_name account, account_name code, action_name type = "" );
-         //void set_authority( account_name account, permission_name perm, authority auth,
-         //                            permission_name parent, const vector<permission_level>& auths, const vector<private_key_type>& keys );
-         //void set_authority( account_name account, permission_name perm, authority auth,
-          //                           permission_name parent = config::owner_name );
-         //void delete_authority( account_name account, permission_name perm,  const vector<permission_level>& auths, const vector<private_key_type>& keys );
-         //void delete_authority( account_name account, permission_name perm );
+         void link_authority( account_name account, account_name code,  permission_name req, action_name type = "" );
+         void unlink_authority( account_name account, account_name code, action_name type = "" );
+         void set_authority( account_name account, permission_name perm, authority auth,
+                                     permission_name parent, const vector<permission_level>& auths, const vector<private_key_type>& keys );
+         void set_authority( account_name account, permission_name perm, authority auth,
+                                     permission_name parent = config::owner_name );
+         void delete_authority( account_name account, permission_name perm,  const vector<permission_level>& auths, const vector<private_key_type>& keys );
+         void delete_authority( account_name account, permission_name perm );
 
          transaction_trace create_account( account_name name, account_name creator = config::system_account_name, bool multisig = false );
 

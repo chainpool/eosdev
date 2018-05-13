@@ -19,7 +19,7 @@
 #include <eosio/chain/apply_context.hpp>
 #include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/contracts/genesis_state.hpp>
-//#include <eosio/chain/resource_limits.hpp>
+#include <eosio/chain/resource_limits.hpp>
 #include <eosio/chain/wasm_interface.hpp>
 #include <eosio/chain/webassembly/runtime_interface.hpp>
 
@@ -30,7 +30,7 @@
 namespace eosio { namespace chain {
    using database = chainbase::database;
    using boost::signals2::signal;
-   //using resource_limits_manager = resource_limits::resource_limits_manager;
+   using resource_limits_manager = resource_limits::resource_limits_manager;
    class generated_transaction_object;
 
    namespace contracts{ class chain_initializer; }
@@ -279,10 +279,9 @@ namespace eosio { namespace chain {
          const chainbase::database& get_database() const { return _db; }
          chainbase::database&       get_mutable_database() { return _db; }
 
-/*
          const resource_limits::resource_limits_manager& get_resource_limits_manager() const { return _resource_limits; }
          resource_limits::resource_limits_manager&       get_mutable_resource_limits_manager() { return _resource_limits; }
-*/
+
          wasm_interface& get_wasm_interface() {
             return _wasm_interface;
          }
@@ -302,12 +301,11 @@ namespace eosio { namespace chain {
                                                flat_set<permission_level>       provided_levels = flat_set<permission_level>()
                                              )const;
 
-         /*optional<fc::microseconds> check_updateauth_authorization( const contracts::updateauth& update, const vector<permission_level>& auths )const;
+         optional<fc::microseconds> check_updateauth_authorization( const contracts::updateauth& update, const vector<permission_level>& auths )const;
          fc::microseconds check_deleteauth_authorization( const contracts::deleteauth& del, const vector<permission_level>& auths )const;
          fc::microseconds check_linkauth_authorization( const contracts::linkauth& link, const vector<permission_level>& auths )const;
          fc::microseconds check_unlinkauth_authorization( const contracts::unlinkauth& unlink, const vector<permission_level>& auths )const;
          void             check_canceldelay_authorization( const contracts::canceldelay& cancel, const vector<permission_level>& auths )const;
-        */
 
          /**
           * @param account - the account owner of the permission
@@ -395,7 +393,7 @@ namespace eosio { namespace chain {
          /// @}
 
          void record_transaction( const transaction& trx );
-         //void update_resource_usage( transaction_trace& trace, const transaction_metadata& meta );
+         void update_resource_usage( transaction_trace& trace, const transaction_metadata& meta );
 
 
          /**
@@ -475,7 +473,7 @@ namespace eosio { namespace chain {
          wasm_interface                   _wasm_interface;
 
          runtime_limits                   _limits;
-         //resource_limits_manager          _resource_limits;
+         resource_limits_manager          _resource_limits;
    };
 
 } }

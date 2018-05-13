@@ -37,15 +37,15 @@ void chain_initializer::register_types(chain_controller& chain, chainbase::datab
    SET_APP_HANDLER( eosio, eosio, newaccount, eosio );
    SET_APP_HANDLER( eosio, eosio, setcode, eosio );
    SET_APP_HANDLER( eosio, eosio, setabi, eosio );
-  /* SET_APP_HANDLER( eosio, eosio, updateauth, eosio );
+   SET_APP_HANDLER( eosio, eosio, updateauth, eosio );
    SET_APP_HANDLER( eosio, eosio, deleteauth, eosio );
    SET_APP_HANDLER( eosio, eosio, linkauth, eosio );
-   SET_APP_HANDLER( eosio, eosio, unlinkauth, eosio );*/
+   SET_APP_HANDLER( eosio, eosio, unlinkauth, eosio );
    SET_APP_HANDLER( eosio, eosio, onerror, eosio );
-   /*SET_APP_HANDLER( eosio, eosio, postrecovery, eosio );
+   SET_APP_HANDLER( eosio, eosio, postrecovery, eosio );
    SET_APP_HANDLER( eosio, eosio, passrecovery, eosio );
    SET_APP_HANDLER( eosio, eosio, vetorecovery, eosio );
-   SET_APP_HANDLER( eosio, eosio, canceldelay, eosio );*/
+   SET_APP_HANDLER( eosio, eosio, canceldelay, eosio );
 }
 
 
@@ -64,17 +64,17 @@ abi_def chain_initializer::eos_contract_abi(const abi_def& eosio_system_abi)
    // TODO add ricardian contracts
    eos_abi.actions.push_back( action_def{name("setcode"), "setcode",""} );
    eos_abi.actions.push_back( action_def{name("setabi"), "setabi",""} );
-   /*eos_abi.actions.push_back( action_def{name("linkauth"), "linkauth",""} );
+   eos_abi.actions.push_back( action_def{name("linkauth"), "linkauth",""} );
    eos_abi.actions.push_back( action_def{name("unlinkauth"), "unlinkauth",""} );
    eos_abi.actions.push_back( action_def{name("updateauth"), "updateauth",""} );
-   eos_abi.actions.push_back( action_def{name("deleteauth"), "deleteauth",""} );*/
+   eos_abi.actions.push_back( action_def{name("deleteauth"), "deleteauth",""} );
    eos_abi.actions.push_back( action_def{name("newaccount"), "newaccount",""} );
-   /*eos_abi.actions.push_back( action_def{name("postrecovery"), "postrecovery",""} );
+   eos_abi.actions.push_back( action_def{name("postrecovery"), "postrecovery",""} );
    eos_abi.actions.push_back( action_def{name("passrecovery"), "passrecovery",""} );
-   eos_abi.actions.push_back( action_def{name("vetorecovery"), "vetorecovery",""} );*/
+   eos_abi.actions.push_back( action_def{name("vetorecovery"), "vetorecovery",""} );
    eos_abi.actions.push_back( action_def{name("onerror"), "onerror",""} );
    eos_abi.actions.push_back( action_def{name("onblock"), "onblock",""} );
-   //eos_abi.actions.push_back( action_def{name("canceldelay"), "canceldelay",""} );
+   eos_abi.actions.push_back( action_def{name("canceldelay"), "canceldelay",""} );
 
    // TODO add any ricardian_clauses
    //
@@ -97,7 +97,6 @@ abi_def chain_initializer::eos_contract_abi(const abi_def& eosio_system_abi)
       }
    });
 
-/*
    eos_abi.structs.emplace_back( struct_def {
       "updateauth", "", {
          {"account", "account_name"},
@@ -131,7 +130,7 @@ abi_def chain_initializer::eos_contract_abi(const abi_def& eosio_system_abi)
          {"permission", "permission_name"},
       }
    });
-*/
+
    eos_abi.structs.emplace_back( struct_def {
       "newaccount", "", {
          {"creator", "account_name"},
@@ -142,7 +141,6 @@ abi_def chain_initializer::eos_contract_abi(const abi_def& eosio_system_abi)
       }
    });
 
-/*
    eos_abi.structs.emplace_back( struct_def {
       "postrecovery", "", {
          {"account", "account_name"},
@@ -169,6 +167,7 @@ abi_def chain_initializer::eos_contract_abi(const abi_def& eosio_system_abi)
          {"trx_id", "transaction_id_type"},
       }
    });
+
    // DATABASE RECORDS
 
    eos_abi.structs.emplace_back( struct_def {
@@ -189,7 +188,6 @@ abi_def chain_initializer::eos_contract_abi(const abi_def& eosio_system_abi)
       "pending_recovery"
    });
 
-*/
    // abi_def fields
 
    eos_abi.structs.emplace_back( struct_def {
@@ -364,7 +362,7 @@ void chain_initializer::prepare_database( chain_controller& chain,
          p.auth.keys.push_back( key_weight{ .key = genesis.initial_key, .weight = 1 } );
       });
 
-      //chain.get_mutable_resource_limits_manager().initialize_account(name);
+      chain.get_mutable_resource_limits_manager().initialize_account(name);
 
       db.create<producer_object>( [&]( auto& pro ) {
          pro.owner = config::system_account_name;

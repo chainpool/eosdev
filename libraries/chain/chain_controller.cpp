@@ -57,11 +57,11 @@ chain_controller::chain_controller( const chain_controller::controller_config& c
       cfg.shared_memory_size),
  _block_log(cfg.block_log_dir),
  _wasm_interface(cfg.wasm_runtime),
- _limits(cfg.limits)
- //_resource_limits(_db)
+ _limits(cfg.limits),
+ _resource_limits(_db)
 {
    _initialize_indexes();
-   //_resource_limits.initialize_database();
+   _resource_limits.initialize_database();
 
 
    for (auto& f : cfg.applied_block_callbacks)
@@ -389,7 +389,7 @@ transaction_trace chain_controller::delayed_transaction_processing( const transa
 
    FC_ASSERT(!payer.empty(), "Failed to find a payer for delayed transaction!");
 
-   //update_resource_usage(result, mtrx);
+   update_resource_usage(result, mtrx);
 
    auto sender_id = transaction_id_to_sender_id( mtrx.id );
 
@@ -617,17 +617,17 @@ void chain_controller::_finalize_block( const block_trace& trace, const producer
    clear_expired_transactions();
 
    update_last_irreversible_block();
-   //_resource_limits.process_account_limit_updates();
+   _resource_limits.process_account_limit_updates();
 
    const auto& chain_config = this->get_global_properties().configuration;
-   /*_resource_limits.set_block_parameters(
+   _resource_limits.set_block_parameters(
       {EOS_PERCENT(chain_config.max_block_cpu_usage, chain_config.target_block_cpu_usage_pct), chain_config.max_block_cpu_usage, config::block_cpu_usage_average_window_ms / config::block_interval_ms, 1000, {99, 100}, {1000, 999}},
       {EOS_PERCENT(chain_config.max_block_net_usage, chain_config.target_block_net_usage_pct), chain_config.max_block_net_usage, config::block_size_average_window_ms / config::block_interval_ms, 1000, {99, 100}, {1000, 999}}
    );
 
    // trigger an update of our elastic values for block limits
    _resource_limits.process_block_usage(b.block_num());
-*/
+
   // validate_block_header( _skip_flags, b );
    applied_block( trace ); //emit
    if (_currently_replaying_blocks)
@@ -955,7 +955,7 @@ void chain_controller::__apply_block(const signed_block& next_block)
             c_trace.shard_traces.emplace_back(move(s_trace));
          } /// for each shard
 
-        // _resource_limits.synchronize_account_ram_usage();
+         _resource_limits.synchronize_account_ram_usage();
          _apply_cycle_trace(c_trace);
          r_trace.cycle_traces.emplace_back(move(c_trace));
       } /// for each cycle
@@ -1039,7 +1039,6 @@ private:
    bool _track_delay;
 };
 
-/*
 optional<fc::microseconds> chain_controller::check_updateauth_authorization( const contracts::updateauth& update,
                                                                              const vector<permission_level>& auths )const
 {
@@ -1163,7 +1162,7 @@ void chain_controller::check_canceldelay_authorization( const contracts::canceld
                tx_irrelevant_auth,
                "canceldelay action declares irrelevant authority '${auth}'; specified authority to satisfy is ${min}",
                ("auth", auth)("min", cancel.canceling_auth) );
-}*/
+}
 
 fc::microseconds chain_controller::check_authorization( const vector<action>& actions,
                                                         const flat_set<public_key_type>& provided_keys,
@@ -1185,7 +1184,7 @@ fc::microseconds chain_controller::check_authorization( const vector<action>& ac
       if( act.account == config::system_account_name ) {
          special_case = true;
 
-         /*if( act.name == contracts::updateauth::get_name() ) {
+         if( act.name == contracts::updateauth::get_name() ) {
             const auto delay = check_updateauth_authorization(act.data_as<contracts::updateauth>(), act.authorization);
             if( delay.valid() ) // update auth is used to modify an existing permission
                max_delay = std::max( max_delay, *delay );
@@ -1205,7 +1204,7 @@ fc::microseconds chain_controller::check_authorization( const vector<action>& ac
             ignore_delay = true;
          } else {
             special_case = false;
-         }*/
+         }
       }
 
       for( const auto& declared_auth : act.authorization ) {
@@ -1286,14 +1285,14 @@ optional<permission_name> chain_controller::lookup_minimum_permission(account_na
                                                                     action_name act_name) const {
 #warning TODO: this comment sounds like it is expecting a check ("may") somewhere else, but I have not found anything else
    // Special case native actions cannot be linked to a minimum permission, so there is no need to check.
-   /*if( scope == config::system_account_name ) {
+   if( scope == config::system_account_name ) {
        FC_ASSERT( act_name != contracts::updateauth::get_name() &&
                   act_name != contracts::deleteauth::get_name() &&
                   act_name != contracts::linkauth::get_name() &&
                   act_name != contracts::unlinkauth::get_name() &&
                   act_name != contracts::canceldelay::get_name(),
                   "cannot call lookup_minimum_permission on native actions that are not allowed to be linked to minimum permissions" );
-   }*/
+   }
 
    try {
       optional<permission_name> linked_permission = lookup_linked_permission(authorizer_account, scope, act_name);
@@ -1350,7 +1349,6 @@ void chain_controller::record_transaction(const transaction& trx)
    }
 }
 
-/*
 static uint32_t calculate_transaction_cpu_usage( const transaction_trace& trace, const transaction_metadata& meta, const chain_config& chain_configuration ) {
    // calculate the sum of all actions retired
    uint32_t action_cpu_usage = 0;
@@ -1435,7 +1433,7 @@ void chain_controller::update_resource_usage( transaction_trace& trace, const tr
    // skipped account usage will still decay.
    uint32_t ordinal = (uint32_t)(head_block_time().time_since_epoch().count() / fc::milliseconds(config::block_interval_ms).count());
    _resource_limits.add_transaction_usage(bill_to_accounts, trace.cpu_usage, trace.net_usage, ordinal);
-}*/
+}
 
 
 void chain_controller::validate_tapos(const transaction& trx)const {
@@ -1754,7 +1752,7 @@ void chain_controller::_initialize_chain(contracts::chain_initializer& starter)
             //p.recent_slots_filled = uint64_t(-1);
          });
 
-         //_resource_limits.initialize_chain();
+         _resource_limits.initialize_chain();
 
          // Initialize block summary index
          for (int i = 0; i < 0x10000; i++)
@@ -2123,7 +2121,7 @@ transaction_trace chain_controller::__apply_transaction( transaction_metadata& m
       fc::move_append(result.deferred_transaction_requests, std::move(context.results.deferred_transaction_requests));
    }
 
-   //update_resource_usage(result, meta);
+   update_resource_usage(result, meta);
 
    update_permission_usage(meta);
    record_transaction(meta.trx());
@@ -2183,7 +2181,7 @@ transaction_trace chain_controller::_apply_error( transaction_metadata& meta ) {
 
       uint32_t act_usage = result.action_traces.size();
 
-      //update_resource_usage(result, meta);
+      update_resource_usage(result, meta);
       record_transaction(meta.trx());
 
       temp_session.squash();
@@ -2203,17 +2201,17 @@ transaction_trace chain_controller::_apply_error( transaction_metadata& meta ) {
 
 void chain_controller::_destroy_generated_transaction( const generated_transaction_object& gto ) {
    auto& generated_transaction_idx = _db.get_mutable_index<generated_transaction_multi_index>();
-   //_resource_limits.add_pending_account_ram_usage(gto.payer, -( config::billable_size_v<generated_transaction_object> + gto.packed_trx.size()));
+   _resource_limits.add_pending_account_ram_usage(gto.payer, -( config::billable_size_v<generated_transaction_object> + gto.packed_trx.size()));
    generated_transaction_idx.remove(gto);
 
 }
 
 void chain_controller::_create_generated_transaction( const deferred_transaction& dto ) {
    size_t trx_size = fc::raw::pack_size(dto);
-   /*_resource_limits.add_pending_account_ram_usage(
+   _resource_limits.add_pending_account_ram_usage(
       dto.payer,
       (config::billable_size_v<generated_transaction_object> + (int64_t)trx_size)
-   );*/
+   );
 
    _db.create<generated_transaction_object>([&](generated_transaction_object &obj) {
       obj.trx_id = dto.id();
@@ -2337,7 +2335,7 @@ transaction_trace chain_controller::wrap_transaction_processing( transaction_met
    // for now apply the transaction serially but schedule it according to those invariants
 
    auto result = trx_processing(data);
-   //_resource_limits.synchronize_account_ram_usage();
+   _resource_limits.synchronize_account_ram_usage();
 
    auto& bcycle = _pending_block->regions.back().cycles_summary.back();
    auto& bshard = bcycle.front();

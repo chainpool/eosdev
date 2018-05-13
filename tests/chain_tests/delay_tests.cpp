@@ -26,7 +26,6 @@ asset get_currency_balance(const TESTER& chain, account_name account) {
 
 const std::string eosio_token = name(N(eosio.token)).to_string();
 
-/*
 // test link to permission with delay directly on it
 BOOST_AUTO_TEST_CASE( link_delay_direct_test ) { try {
    TESTER chain;
@@ -167,9 +166,7 @@ BOOST_AUTO_TEST_CASE( link_delay_direct_test ) { try {
 
 } FC_LOG_AND_RETHROW() }/// schedule_test
 
-*/
 
-/*
 BOOST_AUTO_TEST_CASE(delete_auth_test) { try {
    TESTER chain;
 
@@ -218,7 +215,6 @@ BOOST_AUTO_TEST_CASE(delete_auth_test) { try {
            ("code", "eosio.token")
            ("type", "transfer")
            ("requirement", "first"));
-
 
    // create CUR token
    chain.produce_blocks();
@@ -316,9 +312,7 @@ BOOST_AUTO_TEST_CASE(delete_auth_test) { try {
 
 } FC_LOG_AND_RETHROW() }/// delete_auth_test
 
-*/
 
-/*
 // test link to permission with delay on permission which is parent of min permission (special logic in permission_object::satisfies)
 BOOST_AUTO_TEST_CASE( link_delay_direct_parent_permission_test ) { try {
    TESTER chain;
@@ -339,7 +333,6 @@ BOOST_AUTO_TEST_CASE( link_delay_direct_parent_permission_test ) { try {
    chain.create_account(N(tester));
    chain.create_account(N(tester2));
    chain.produce_blocks(10);
-
 
    chain.push_action(config::system_account_name, contracts::updateauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
@@ -792,9 +785,7 @@ BOOST_AUTO_TEST_CASE( link_delay_permission_change_test ) { try {
    BOOST_REQUIRE_EQUAL(asset::from_string("16.0000 CUR"), liquid_balance);
 
 } FC_LOG_AND_RETHROW() }/// schedule_test
-*/
 
-/*
 // test removing delay on permission based on heirarchy delay
 BOOST_AUTO_TEST_CASE( link_delay_permission_change_with_delay_heirarchy_test ) { try {
    TESTER chain;
@@ -1596,7 +1587,6 @@ BOOST_AUTO_TEST_CASE( link_delay_link_change_heirarchy_test ) { try {
    BOOST_REQUIRE_EQUAL(asset::from_string("16.0000 CUR"), liquid_balance);
 
 } FC_LOG_AND_RETHROW() }/// schedule_test
-*/
 
 // test delay_sec field imposing unneeded delay
 BOOST_AUTO_TEST_CASE( mindelay_test ) { try {
@@ -1732,7 +1722,6 @@ BOOST_AUTO_TEST_CASE( mindelay_test ) { try {
 
 } FC_LOG_AND_RETHROW() }/// schedule_test
 
-/*
 // test canceldelay action cancelling a delayed transaction
 BOOST_AUTO_TEST_CASE( canceldelay_test ) { try {
    TESTER chain;
@@ -2207,10 +2196,8 @@ BOOST_AUTO_TEST_CASE( canceldelay_test2 ) { try {
       BOOST_REQUIRE_EQUAL(asset::from_string("0.0000 CUR"), liquid_balance);
    }
 } FC_LOG_AND_RETHROW() }
-*/
 
 
-/*
 BOOST_AUTO_TEST_CASE( max_transaction_delay_create ) { try {
    //assuming max transaction delay is 45 days (default in confgi.hpp)
    TESTER chain;
@@ -2238,10 +2225,8 @@ BOOST_AUTO_TEST_CASE( max_transaction_delay_create ) { try {
       }
    );
 } FC_LOG_AND_RETHROW() }
-*/
 
 
-/*
 BOOST_AUTO_TEST_CASE( max_transaction_delay_execute ) { try {
    //assuming max transaction delay is 45 days (default in confgi.hpp)
    TESTER chain;
@@ -2317,6 +2302,5 @@ BOOST_AUTO_TEST_CASE( max_transaction_delay_execute ) { try {
    BOOST_REQUIRE_EQUAL(asset::from_string("91.0000 CUR"), liquid_balance);
 
 } FC_LOG_AND_RETHROW() }
-*/
 
 BOOST_AUTO_TEST_SUITE_END()
