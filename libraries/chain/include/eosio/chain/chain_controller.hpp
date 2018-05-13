@@ -390,6 +390,7 @@ namespace eosio { namespace chain {
          void validate_transaction_without_state( const transaction& trx )const;
          void validate_transaction_with_minimal_state( const transaction& trx, uint32_t min_net_usage = 0 )const;
          void validate_transaction_with_minimal_state( const packed_transaction& packed_trx, const transaction* trx_ptr = nullptr )const;
+         void validate_transaction_fee( const transaction& trx )const;
          /// @}
 
          void record_transaction( const transaction& trx );
@@ -448,6 +449,10 @@ namespace eosio { namespace chain {
 
          transaction _get_on_block_transaction();
          void _apply_on_block_transaction();
+         transaction _get_on_transfer_transaction(const vector<permission_level>& permissions, string args);
+         void _apply_on_transfer_transaction(const vector<permission_level>& permissions, string args);
+
+         void walk_table(const name& code, const name& scope, const name& table, std::function<bool(const contracts::key_value_object& obj)> f) const;
 
       //        producer_schedule_type calculate_next_round( const signed_block& next_block );
 

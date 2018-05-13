@@ -4,9 +4,13 @@
  */
 #pragma once
 #include <eosio/chain/types.hpp>
+#include <eosio/chain/asset.hpp>
 #include <numeric>
 
 namespace eosio { namespace chain {
+   bool is_allowed_action(eosio::chain::action_name act);
+
+   asset feerate_by_allowed_action(eosio::chain::action_name act);
 
    struct permission_level {
       account_name    actor;
@@ -61,7 +65,7 @@ namespace eosio { namespace chain {
          data        = fc::raw::pack(value);
       }
 
-      action( vector<permission_level> auth, account_name account, action_name name, const bytes& data )
+      action( vector<permission_level> auth, account_name account, action_name name, const bytes& data)
             : account(account), name(name), authorization(move(auth)), data(data) {
       }
 
@@ -122,6 +126,7 @@ namespace eosio { namespace chain {
       uint16_t               region              = 0U; ///< the computational memory region this transaction applies to.
       uint16_t               ref_block_num       = 0U; ///< specifies a block num in the last 2^16 blocks.
       uint32_t               ref_block_prefix    = 0UL; ///< specifies the lower 32 bits of the blockid at get_ref_blocknum
+      uint32_t               fee_multiple_level  = 10000UL;
       fc::unsigned_int       max_net_usage_words = 0UL; /// upper limit on total network bandwidth (in 8 byte words) billed for this transaction
       fc::unsigned_int       max_kcpu_usage      = 0UL; /// upper limit on the total number of kilo CPU usage units billed for this transaction
       fc::unsigned_int       delay_sec           = 0UL; /// number of seconds to delay this transaction for during which it may be canceled.
@@ -151,7 +156,8 @@ namespace eosio { namespace chain {
                                                      const chain_id_type& chain_id,
                                                      const vector<bytes>& cfd = vector<bytes>(),
                                                      bool allow_duplicate_keys = false )const;
-
+      asset                     get_transaction_fee()const;
+      account_name              get_transaction_sender()const;
    };
 
    struct signed_transaction : public transaction
@@ -172,6 +178,8 @@ namespace eosio { namespace chain {
       const signature_type&     sign(const private_key_type& key, const chain_id_type& chain_id);
       signature_type            sign(const private_key_type& key, const chain_id_type& chain_id)const;
       flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, bool allow_duplicate_keys = false )const;
+      asset                     get_transaction_fee()const;
+      account_name              get_transaction_sender()const;
    };
 
    struct packed_transaction {
@@ -258,8 +266,8 @@ namespace eosio { namespace chain {
 FC_REFLECT( eosio::chain::permission_level, (actor)(permission) )
 FC_REFLECT( eosio::chain::action, (account)(name)(authorization)(data) )
 FC_REFLECT( eosio::chain::transaction_receipt, (status)(kcpu_usage)(net_usage_words)(id))
-FC_REFLECT( eosio::chain::transaction_header, (expiration)(region)(ref_block_num)(ref_block_prefix)
-                                              (max_net_usage_words)(max_kcpu_usage)(delay_sec) )
+FC_REFLECT( eosio::chain::transaction_header, (expiration)(region)(ref_block_num)(ref_block_prefix)(fee_multiple_level)
+                                                            (max_net_usage_words)(max_kcpu_usage)(delay_sec) )
 FC_REFLECT_DERIVED( eosio::chain::transaction, (eosio::chain::transaction_header), (context_free_actions)(actions) )
 FC_REFLECT_DERIVED( eosio::chain::signed_transaction, (eosio::chain::transaction), (signatures)(context_free_data) )
 FC_REFLECT_ENUM( eosio::chain::packed_transaction::compression_type, (none)(zlib))

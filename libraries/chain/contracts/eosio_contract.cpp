@@ -344,7 +344,7 @@ void apply_eosio_linkauth(apply_context& context) {
 
 void apply_eosio_unlinkauth(apply_context& context) {
    context.require_write_lock( config::eosio_auth_scope );
-   
+
    auto& resources = context.mutable_controller.get_mutable_resource_limits_manager();
    auto& db = context.mutable_db;
    auto unlink = context.act.data_as<unlinkauth>();

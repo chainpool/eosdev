@@ -103,6 +103,10 @@ struct billable_size;
 template<typename T>
 constexpr uint64_t billable_size_v = ((billable_size<T>::value + billable_alignment - 1) / billable_alignment) * billable_alignment;
 
+// reward rate transfer to producer, 100 means 1%.
+const static asset fee_rate = asset(100);
+// Transaction Fee, default to 0.1 EOS.
+const static asset token_per_action = asset(1000);
 
 } } } // namespace eosio::chain::config
 

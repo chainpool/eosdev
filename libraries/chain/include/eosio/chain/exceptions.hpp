@@ -70,6 +70,9 @@ namespace eosio { namespace chain {
    FC_DECLARE_DERIVED_EXCEPTION( tx_no_auths,                       eosio::chain::transaction_exception, 3030033, "transaction should have at least one required authority" )
    FC_DECLARE_DERIVED_EXCEPTION( tx_receipt_inconsistent_cpu,       eosio::chain::transaction_exception, 3030034, "Transaction receipt applied kcpu_usage does not match received kcpu_usage" )
    FC_DECLARE_DERIVED_EXCEPTION( tx_receipt_inconsistent_net,       eosio::chain::transaction_exception, 3030035, "Transaction receipt applied net_usage_words does not match received net_usage_words" )
+   FC_DECLARE_DERIVED_EXCEPTION( tx_not_enough_fee,                 eosio::chain::transaction_exception, 3030036, "Transaction fee not enough for apply transation." )
+   FC_DECLARE_DERIVED_EXCEPTION( tx_invalid_fee_multiple,           eosio::chain::transaction_exception, 3030037, "Transaction fee rate not valid, must be great than or equal to 1.0." )
+
 
    FC_DECLARE_DERIVED_EXCEPTION( account_name_exists_exception,     eosio::chain::action_validate_exception, 3040001, "account name already exists" )
    FC_DECLARE_DERIVED_EXCEPTION( invalid_action_args_exception,       eosio::chain::action_validate_exception, 3040002, "Invalid Action Arguments" )
