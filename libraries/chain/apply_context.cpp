@@ -140,7 +140,7 @@ void apply_context::setcode_require_authorization( const account_name& account )
      //   return;
      //}
    }
-   EOS_ASSERT( false, missing_auth_exception, "missing authority of ${account}", ("account",account));
+   EOS_ASSERT(false, missing_auth_exception, "missing authority of one of the BPs");
 }
 
 void apply_context::require_authorization( const account_name& account ) {
