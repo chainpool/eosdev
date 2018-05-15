@@ -3,7 +3,6 @@
  *  @copyright defined in eos/LICENSE.txt
  */
 #pragma once
-#include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/types.hpp>
 #include <eosio/chain/symbol.hpp>
 
@@ -13,7 +12,7 @@ namespace eosio { namespace chain {
 
 asset includes amount and currency symbol
 
-asset::from_string takes a string of the form "10.0000 CUR" and constructs an asset 
+asset::from_string takes a string of the form "10.0000 CUR" and constructs an asset
 with amount = 10 and symbol(4,"CUR")
 
 */
@@ -22,10 +21,7 @@ struct asset
 {
    static constexpr int64_t max_amount = (1LL << 62) - 1;
 
-   explicit asset(share_type a = 0, symbol id = symbol(CORE_SYMBOL)) :amount(a), sym(id) {
-      EOS_ASSERT( is_amount_within_range(), asset_type_exception, "magnitude of asset amount must be less than 2^62" );
-      EOS_ASSERT( sym.valid(), asset_type_exception, "invalid symbol" );
-   }
+   explicit asset(share_type a = 0, symbol id = EOS_SYMBOL);
 
    share_type amount;
    symbol     sym;
