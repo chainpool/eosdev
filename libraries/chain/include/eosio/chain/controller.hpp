@@ -15,6 +15,7 @@ namespace chainbase {
 namespace eosio { namespace chain {
 
    class authorization_manager;
+   class txfee_manager;
 
    namespace resource_limits {
       class resource_limits_manager;
@@ -131,6 +132,8 @@ namespace eosio { namespace chain {
          resource_limits_manager&              get_mutable_resource_limits_manager();
          const authorization_manager&          get_authorization_manager()const;
          authorization_manager&                get_mutable_authorization_manager();
+         const txfee_manager&                  get_txfee_manager()const;
+         txfee_manager&                        get_mutable_txfee_manager();
 
          uint32_t             head_block_num()const;
          time_point           head_block_time()const;
