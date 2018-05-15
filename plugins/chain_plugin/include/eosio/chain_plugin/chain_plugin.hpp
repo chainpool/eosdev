@@ -160,6 +160,16 @@ public:
 
    get_required_keys_result get_required_keys( const get_required_keys_params& params)const;
 
+   struct get_required_fee_params {
+      fc::variant transaction;
+   };
+   struct get_required_fee_result {
+      asset required_fee;
+   };
+
+   get_required_fee_result get_required_fee( const get_required_fee_params& params)const;
+
+
 
    struct get_block_params {
       string block_num_or_id;
@@ -394,3 +404,5 @@ FC_REFLECT( eosio::chain_apis::read_only::abi_bin_to_json_params, (code)(action)
 FC_REFLECT( eosio::chain_apis::read_only::abi_bin_to_json_result, (args)(required_scope)(required_auth) )
 FC_REFLECT( eosio::chain_apis::read_only::get_required_keys_params, (transaction)(available_keys) )
 FC_REFLECT( eosio::chain_apis::read_only::get_required_keys_result, (required_keys) )
+FC_REFLECT( eosio::chain_apis::read_only::get_required_fee_params, (transaction) )
+FC_REFLECT( eosio::chain_apis::read_only::get_required_fee_result, (required_fee) )
