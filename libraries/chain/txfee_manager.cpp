@@ -28,7 +28,7 @@ namespace eosio { namespace chain {
    {
       auto fee = asset(0);
       for (const auto& act : trx.actions ) {
-        auto it = fee_map.find(N(act.name));
+        auto it = fee_map.find(act.name);
         EOS_ASSERT(it != fee_map.end(), action_validate_exception, "action name not include in feemap");
         fee += it->second;
       }

@@ -653,6 +653,7 @@ struct controller_impl {
                try {
                   auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
                   push_transaction( onftrx, fc::time_point::maximum(), true, config::default_min_transaction_cpu_usage_us);
+                  ilog("-------call onfee function tx");
                } catch ( ... ) {
                   FC_ASSERT(false, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
                }
