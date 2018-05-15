@@ -632,6 +632,15 @@ struct controller_impl {
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
             if (!implicit) {
+               FC_ASSERT(txfee.check_transaction(trx->trx) == true, "transaction include actor more than one");
+               FC_ASSERT(trx->trx.fee == txfee.get_required_fee(trx->trx), "set tx fee failed");
+               try {
+                  auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
+                  push_transaction( onftrx, fc::time_point::maximum(), true, config::default_min_transaction_cpu_usage_us);
+               } catch ( ... ) {
+                  FC_ASSERT(false, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+               }
+
                authorization.check_authorization(
                        trx->trx.actions,
                        trx->recover_keys(),
@@ -1036,6 +1045,21 @@ struct controller_impl {
       return trx;
    }
 
+   signed_transaction get_on_fee_transaction( asset fee, account_name actor)
+   {
+      action on_fee_act;
+      on_fee_act.account = config::system_account_name;
+      on_fee_act.name = N(onfee);
+      on_fee_act.authorization = vector<permission_level>{{config::system_account_name, config::active_name}};
+      fee_paramter param(actor, fee);
+      on_fee_act.data = fc::raw::pack(param);
+
+      signed_transaction trx;
+      trx.actions.emplace_back(std::move(on_fee_act));
+      trx.set_reference_block(self.head_block_id());
+      trx.expiration = self.pending_block_time() + fc::microseconds(999'999); // Round up to nearest second to avoid appearing expired
+      return trx;
+   }
 }; /// controller_impl
 
 const resource_limits_manager&   controller::get_resource_limits_manager()const
