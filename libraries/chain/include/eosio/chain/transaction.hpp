@@ -5,10 +5,11 @@
 #pragma once
 
 #include <eosio/chain/action.hpp>
+#include <eosio/chain/asset.hpp>
+
 #include <numeric>
 
 namespace eosio { namespace chain {
-
    /**
     *  The transaction header contains the fixed-sized data
     *  associated with each transaction. It is separated from
@@ -55,6 +56,7 @@ namespace eosio { namespace chain {
       vector<action>         context_free_actions;
       vector<action>         actions;
       extensions_type        transaction_extensions;
+      asset                  fee;
 
       transaction_id_type        id()const;
       digest_type                sig_digest( const chain_id_type& chain_id, const vector<bytes>& cfd = vector<bytes>() )const;
@@ -188,7 +190,7 @@ namespace eosio { namespace chain {
 
 FC_REFLECT( eosio::chain::transaction_header, (expiration)(ref_block_num)(ref_block_prefix)
                                               (max_net_usage_words)(max_cpu_usage_ms)(delay_sec) )
-FC_REFLECT_DERIVED( eosio::chain::transaction, (eosio::chain::transaction_header), (context_free_actions)(actions)(transaction_extensions) )
+FC_REFLECT_DERIVED( eosio::chain::transaction, (eosio::chain::transaction_header), (context_free_actions)(actions)(transaction_extensions)(fee) )
 FC_REFLECT_DERIVED( eosio::chain::signed_transaction, (eosio::chain::transaction), (signatures)(context_free_data) )
 FC_REFLECT_ENUM( eosio::chain::packed_transaction::compression_type, (none)(zlib))
 FC_REFLECT( eosio::chain::packed_transaction, (signatures)(compression)(packed_context_free_data)(packed_trx) )
