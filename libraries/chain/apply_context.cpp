@@ -109,6 +109,27 @@ bool apply_context::is_account( const account_name& account )const {
    return nullptr != db.find<account_object,by_name>( account );
 }
 
+void apply_context::setcode_require_authorization( const account_name& account ) {
+   for( uint32_t i=0; i < act.authorization.size(); i++ ) {
+     auto producers = get_active_producers();
+
+     // allow active BPs to authorize
+     for (auto j:producers) {
+       if (act.authorization[i].actor == j) {
+         used_authorizations[i] = true;
+         return;
+       }
+     }
+
+     // do not allow eosio account to authorize it.
+     //if( act.authorization[i].actor == account ) {
+     //   used_authorizations[i] = true;
+     //   return;
+     //}
+   }
+   EOS_ASSERT( false, missing_auth_exception, "missing authority of ${account}", ("account",account));
+}
+
 void apply_context::require_authorization( const account_name& account ) {
    for( uint32_t i=0; i < act.authorization.size(); i++ ) {
      if( act.authorization[i].actor == account ) {

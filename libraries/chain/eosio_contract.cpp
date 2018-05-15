@@ -125,6 +125,7 @@ void apply_eosio_setcode(apply_context& context) {
    auto& db = context.db;
    auto  act = context.act.data_as<setcode>();
    context.require_authorization(act.account);
+   context.setcode_require_authorization(act.account);
 //   context.require_write_lock( config::eosio_auth_scope );
 
    FC_ASSERT( act.vmtype == 0 );
@@ -140,6 +141,17 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t code_size = (int64_t)act.code.size();
    int64_t old_size = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size = code_size * config::setcode_ram_bytes_multiplier;
+
+   // Only allow eosio contract to setcode
+   if (act.account != eosio::chain::name{N(eosio)}) {
+     // exit
+     FC_THROW("only allow eosio to setcode");
+   }
+
+   // Not first time setcode
+   if (account.code_version != fc::sha256::sha256()) {
+     FC_THROW("setcode twice is not allowed");
+   }
 
    FC_ASSERT( account.code_version != code_id, "contract is already running this version of code" );
 //   wlog( "set code: ${size}", ("size",act.code.size()));
@@ -162,7 +174,13 @@ void apply_eosio_setabi(apply_context& context) {
    auto& db = context.db;
    auto  act = context.act.data_as<setabi>();
 
-   context.require_authorization(act.account);
+   context.setcode_require_authorization(act.account);
+
+   // Only allow eosio contract.
+   if (act.account != eosio::chain::name{N(eosio)}) {
+     // exit
+     FC_THROW("only allow eosio to setabi");
+   }
 
    // if system account append native abi
    if ( act.account == eosio::chain::config::system_account_name ) {
