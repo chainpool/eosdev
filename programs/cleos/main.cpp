@@ -265,7 +265,7 @@ fc::variant determine_required_fee(const signed_transaction& trx) {
    auto get_arg = fc::mutable_variant_object
            ("transaction", (transaction)trx);
    const auto& required_fee = call(get_required_fee, get_arg);
-   return required_fee["fee"];
+   return required_fee["required_fee"];
 }
 
 void sign_transaction(signed_transaction& trx, fc::variant& required_keys, const chain_id_type& chain_id) {
@@ -293,8 +293,13 @@ fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000
       trx.context_free_actions.emplace_back( generate_nonce_action() );
    }
 
+   auto required_keys = determine_required_keys(trx);
+   size_t num_keys = required_keys.is_array() ? required_keys.get_array().size() : 1;
+   auto txfee = determine_required_fee(trx);
+
    trx.max_cpu_usage_ms = tx_max_net_usage;
    trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
+   fc::from_variant(txfee, trx.fee);
 
    if (!tx_skip_sign) {
       auto required_keys = determine_required_keys(trx);
