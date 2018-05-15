@@ -124,7 +124,6 @@ void apply_eosio_setcode(apply_context& context) {
 
    auto& db = context.db;
    auto  act = context.act.data_as<setcode>();
-
    context.setcode_require_authorization(act.account);
 //   context.require_write_lock( config::eosio_auth_scope );
 
