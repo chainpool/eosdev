@@ -12,12 +12,11 @@ namespace eosio { namespace chain {
         fee_map[N(newaccount)] = asset(1000);
    }
 
-   bool txfee_manager::check_transaction( const transaction& trx,
-                                          account_name actor)const
+   bool txfee_manager::check_transaction( const transaction& trx)const
    {
       for( const auto& act : trx.actions ) {
           for (const auto & perm : act.authorization) {
-            if (perm.actor != actor) {
+            if (perm.actor != trx.actions[0].authorization[0].actor) {
                 return false;
             }
           }
