@@ -16,7 +16,7 @@ namespace eosio { namespace chain {
 
          explicit txfee_manager();
 
-         bool check_transaction( const transaction& trx, account_name actor)const;
+         bool check_transaction( const transaction& trx)const;
 
          asset get_required_fee( const transaction& trx)const;
 
@@ -24,5 +24,12 @@ namespace eosio { namespace chain {
       private:
         std::map<action_name, asset> fee_map;
    };
-
+   class fee_paramter {
+     public:
+       account_name name;
+       asset fee;
+       fee_paramter(account_name name, asset fee) : name(name), fee(fee) {};
+    };
 } } /// namespace eosio::chain
+
+FC_REFLECT(eosio::chain::fee_paramter, (name)(fee))
