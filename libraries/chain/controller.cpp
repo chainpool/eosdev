@@ -13,6 +13,7 @@
 #include <eosio/chain/transaction_object.hpp>
 
 #include <eosio/chain/authorization_manager.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
 
 #include <chainbase/chainbase.hpp>
@@ -53,6 +54,7 @@ struct controller_impl {
    wasm_interface                 wasmif;
    resource_limits_manager        resource_limits;
    authorization_manager          authorization;
+   txfee_manager                  txfee;
    controller::config             conf;
    bool                           replaying = false;
 
@@ -90,6 +92,7 @@ struct controller_impl {
     wasmif( cfg.wasm_runtime ),
     resource_limits( db ),
     authorization( s, db ),
+    txfee(),
     conf( cfg )
    {
 
@@ -1008,6 +1011,15 @@ const authorization_manager&   controller::get_authorization_manager()const
 authorization_manager&         controller::get_mutable_authorization_manager()
 {
    return my->authorization;
+}
+
+const txfee_manager&   controller::get_txfee_manager()const
+{
+   return my->txfee;
+}
+txfee_manager&         controller::get_mutable_txfee_manager()
+{
+   return my->txfee;
 }
 
 controller::controller( const controller::config& cfg )

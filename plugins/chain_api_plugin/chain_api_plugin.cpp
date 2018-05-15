@@ -75,6 +75,7 @@ void chain_api_plugin::plugin_startup() {
       CHAIN_RO_CALL(abi_json_to_bin, 200),
       CHAIN_RO_CALL(abi_bin_to_json, 200),
       CHAIN_RO_CALL(get_required_keys, 200),
+      CHAIN_RO_CALL(get_required_fee, 200),
       CHAIN_RW_CALL(push_block, 202),
       CHAIN_RW_CALL(push_transaction, 202),
       CHAIN_RW_CALL(push_transactions, 202)
