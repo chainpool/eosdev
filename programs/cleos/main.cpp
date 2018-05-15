@@ -249,6 +249,16 @@ fc::variant determine_required_keys(const signed_transaction& trx) {
    return required_keys["required_keys"];
 }
 
+fc::variant determine_required_fee(const signed_transaction& trx) {
+   // TODO better error checking
+   //wdump((trx));
+   auto get_arg = fc::mutable_variant_object
+           ("transaction", (transaction)trx);
+   const auto& required_fee = call(get_required_fee, get_arg);
+   return required_fee["fee"];
+}
+
+
 void sign_transaction(signed_transaction& trx, fc::variant& required_keys) {
    // TODO determine chain id
    fc::variants sign_args = {fc::variant(trx), required_keys, fc::variant(chain_id_type{})};

@@ -7,6 +7,7 @@
 #include <eosio/chain/block_log.hpp>
 #include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/authorization_manager.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 #include <eosio/chain/producer_object.hpp>
 #include <eosio/chain/config.hpp>
 #include <eosio/chain/types.hpp>
@@ -695,6 +696,14 @@ read_only::get_required_keys_result read_only::get_required_keys( const get_requ
    return result;
 }
 
+read_only::get_required_fee_result read_only::get_required_fee( const get_required_fee_params& params )const {
+   transaction pretty_input;
+   from_variant(params.transaction, pretty_input);
+   auto required_fee = db.get_txfee_manager().get_required_fee(pretty_input);
+   get_required_fee_result result;
+   result.required_fee = required_fee;
+   return result;
+}
 
 } // namespace chain_apis
 } // namespace eosio
