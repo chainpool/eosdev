@@ -28,8 +28,9 @@ namespace eosio { namespace chain {
      public:
        account_name name;
        asset fee;
-       fee_paramter(account_name name, asset fee) : name(name), fee(fee) {};
+       account_name producer;
+       fee_paramter(account_name name, asset fee, account_name producer) : name(name), fee(fee), producer(producer) {};
     };
 } } /// namespace eosio::chain
 
-FC_REFLECT(eosio::chain::fee_paramter, (name)(fee))
+FC_REFLECT(eosio::chain::fee_paramter, (name)(fee)(producer))
