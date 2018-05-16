@@ -1,7 +1,15 @@
 FROM eosio/builder as builder
-ARG branch=master
+ARG branch=develop
 
-RUN git clone -b $branch --depth 1 https://github.com/EOSIO/eos.git --recursive \
+RUN mkdir -p /root/.ssh
+ADD id_rsa /root/.ssh/id_rsa
+RUN chmod 700 /root/.ssh/id_rsa
+RUN echo "Host github.com\n\tStrictHostKeyChecking no\n" >> /root/.ssh/config
+RUN echo "LogLevel=quiet" >> /root/.ssh/config
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
+
+RUN git clone -b $branch --depth 1 git@github.com:chainpool/eosdev.git --recursive eos \
     && cd eos && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
     && cmake -H. -B"/tmp/build" -GNinja -DCMAKE_BUILD_TYPE=Release -DWASM_ROOT=/opt/wasm -DCMAKE_CXX_COMPILER=clang++ \
        -DCMAKE_C_COMPILER=clang -DCMAKE_INSTALL_PREFIX=/tmp/build  -DSecp256k1_ROOT_DIR=/usr/local -DBUILD_MONGO_DB_PLUGIN=true \
