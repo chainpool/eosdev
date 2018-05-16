@@ -1052,8 +1052,9 @@ struct controller_impl {
       action on_fee_act;
       on_fee_act.account = config::system_account_name;
       on_fee_act.name = N(onfee);
-      on_fee_act.authorization = vector<permission_level>{{config::system_account_name, config::active_name}};
-      fee_paramter param(actor, fee);
+      on_fee_act.authorization = vector<permission_level>{{actor, config::active_name}};
+      
+      fee_paramter param(actor, fee, self.head_block_header().producer);
       on_fee_act.data = fc::raw::pack(param);
 
       signed_transaction trx;
