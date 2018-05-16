@@ -10,6 +10,8 @@ namespace eosio { namespace chain {
 
    txfee_manager::txfee_manager(){
         fee_map[N(newaccount)] = asset(1000);
+        fee_map[N(setcode)] = asset(1000);
+        fee_map[N(setabi)] = asset(1000);
    }
 
    bool txfee_manager::check_transaction( const transaction& trx)const
