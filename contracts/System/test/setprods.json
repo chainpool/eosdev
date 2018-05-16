@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "producers": [{
+        "producer_name": "user1",
+        "block_signing_key": "EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm"
+    }, {
+        "producer_name": "user2",
+        "block_signing_key": "EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm"
+    }, {
+        "producer_name": "user3",
+        "block_signing_key": "EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm"
+    }]
+}

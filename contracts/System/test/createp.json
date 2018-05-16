@@ -1,0 +1,9 @@
+{
+  "creator": "eosio",
+  "proposal": "upgradesys",
+  "data": {
+    "code_id": "code",
+    "abi_id": "abi"
+  },
+  "expiration": "2018-05-16T12:10:00"
+}

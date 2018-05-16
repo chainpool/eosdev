@@ -6,7 +6,8 @@
 #include <eosio/chain/types.hpp>
 
 #include <boost/multiprecision/cpp_int.hpp>
-
+//#include <eosiolib/privileged.hpp>
+#include <fc/uint128.hpp>
 namespace eosio { namespace chain { namespace contracts {
 
 using namespace boost::multiprecision;
@@ -18,6 +19,7 @@ using uint8     = uint_t<8>;
 using uint16    = uint_t<16>;
 using uint32    = uint_t<32>;
 using uint64    = uint_t<64>;
+//using uint128    = uint_t<128>;
 
 using fixed_string32 = fc::fixed_string<fc::array<uint64,4>>;
 using fixed_string16 = fc::fixed_string<>;
@@ -25,6 +27,33 @@ using type_name      = string;
 using field_name     = string;
 using table_name     = name;
 using action_name    = eosio::chain::action_name;
+
+typedef struct {
+   uint32 base_per_transaction_net_usage;
+   uint32 base_per_transaction_cpu_usage;
+   uint32 base_per_action_cpu_usage;
+   uint32 base_setcode_cpu_usage;
+   uint32 per_signature_cpu_usage;
+   uint32 per_lock_net_usage;
+   uint64 context_free_discount_cpu_usage_num;
+   uint64 context_free_discount_cpu_usage_den;
+   uint32 max_transaction_cpu_usage;
+   uint32 max_transaction_net_usage;
+   uint64 max_block_cpu_usage;
+   uint32 target_block_cpu_usage_pct;
+   uint64 max_block_net_usage;
+   uint32 target_block_net_usage_pct;
+   uint32 max_transaction_lifetime;
+   uint32 max_transaction_exec_time;
+   uint16 max_authority_depth;
+   uint16 max_inline_depth;
+   uint32 max_inline_action_size;
+   uint32 max_generated_transaction_count;
+   uint32 max_transaction_delay;
+   uint64          max_storage_size;
+   uint32          percent_of_max_inflation_rate;
+   uint32          storage_reserve_ratio;      // ratio * 1000
+}parameterss;
 
 struct type_def {
    type_def() = default;
@@ -294,6 +323,25 @@ struct canceldelay {
    }
 };
 
+
+
+
+struct regproducer {
+   account_name       owner;
+   uint64            total_votes;
+   struct_def   prefs;
+   bytes              packed_key;
+   uint64              per_block_payments;
+   uint32             last_claim_time;
+
+   static account_name get_account() {
+      return config::system_account_name;
+   }
+
+   static action_name get_name() {
+      return N(regproducer);
+   }
+};
 } } } /// namespace eosio::chain::contracts
 
 FC_REFLECT( eosio::chain::contracts::type_def                         , (new_type_name)(type) )
@@ -315,3 +363,5 @@ FC_REFLECT( eosio::chain::contracts::postrecovery                     , (account
 FC_REFLECT( eosio::chain::contracts::passrecovery                     , (account) )
 FC_REFLECT( eosio::chain::contracts::vetorecovery                     , (account) )
 FC_REFLECT( eosio::chain::contracts::canceldelay                      , (canceling_auth)(trx_id) )
+
+FC_REFLECT( eosio::chain::contracts::regproducer                      , (owner)(total_votes)(prefs)(packed_key)(per_block_payments)(last_claim_time) )

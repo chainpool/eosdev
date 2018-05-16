@@ -3,9 +3,11 @@
 
 #include "producer_pay.cpp"
 #include "voting.cpp"
+#include "proposal.cpp"
 
 EOSIO_ABI(eosiosystem::system_contract,
           // voting.cpp
           (bond)(unbond)(regproducer)(unregprod)(voteproducer)(onblock)(setprods)(unsetprods)
           // defined in eosio.system.hpp
-          (nonce))
+          (nonce)
+          (createp)(proproposal)(conproposal))

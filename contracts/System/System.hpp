@@ -118,6 +118,19 @@ class system_contract : private eosio::contract {
 public:
   using eosio::contract::contract;
 
+  struct proposal_data {
+    proposal_data() {}
+
+    std::string code_id;
+    std::string abi_id;
+
+    friend bool operator == (const proposal_data &a, const proposal_data &b) {
+      return a.code_id == b.code_id && a.abi_id == b.abi_id;
+    }
+
+    EOSLIB_SERIALIZE(proposal_data, (code_id)(abi_id))
+  };
+
   // functions defined in voting.cpp
   void regproducer(const account_name producer,
                   const public_key producer_key);
@@ -145,6 +158,15 @@ public:
   void setprods(eosio::producer_schedule sch);
 
   void unsetprods(account_name user);
+
+  // @abi action
+  void createp(account_name creator, eosio::name proposal, proposal_data data, time expiration);
+
+  // @abi action
+  void proproposal(account_name proposer, account_name creator, eosio::name proposal);
+
+  // @abi action
+  void conproposal(account_name proposer, account_name creator, eosio::name proposal);
 
 //  void claimrewards(const account_name &owner);
 
@@ -182,6 +204,37 @@ private:
   void increase_voting_power(account_name acnt, const eosio::asset &amount);
 
   void decrease_voting_power(account_name acnt, const eosio::asset &amount);
+
+  // @abi table
+  struct precord {
+    account_name creator;
+    eosio::name proposal;
+    proposal_data data;
+    std::vector<account_name> pros;
+    std::vector<account_name> cons;
+    time expiration;
+
+    eosio::name primary_key() const {
+      return proposal;
+    }
+  };
+
+  // @abi table
+  struct contractstat {
+    account_name contract;
+    proposal_data code;
+    std::string status;
+
+    account_name primary_key() const {
+      return contract;
+    }
+  };
+
+  typedef eosio::multi_index<N(precord), precord> precords;
+  typedef eosio::multi_index<N(contractstat), contractstat> contractstats;
+
+  void check_proposal(eosio::name proposal);
+  int intersection_count(const std::vector<account_name>& a1, const std::vector<account_name>& a2);
 };
 
 } /// eosiosystem

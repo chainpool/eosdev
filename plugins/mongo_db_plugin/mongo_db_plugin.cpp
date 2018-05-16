@@ -26,6 +26,47 @@
 #include <mongocxx/client.hpp>
 #include <mongocxx/instance.hpp>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/date_time.hpp>
+#include <array>
+#include <map>
+#include <string>
+#include <vector>
+#include <time.h>
+
+#include <bsoncxx/types.hpp>
+//#include <eosiolib/chain.h>
+#include <bsoncxx/builder/basic/array.hpp>
+#include <bsoncxx/document/value.hpp>
+#include <bsoncxx/document/view.hpp>
+#include <bsoncxx/exception/exception.hpp>
+#include <bsoncxx/string/to_string.hpp>
+
+
+#include <eosio/chain_plugin/chain_plugin.hpp>
+#include <eosio/chain/fork_database.hpp>
+#include <eosio/chain/block_log.hpp>
+#include <eosio/chain/exceptions.hpp>
+#include <eosio/chain/permission_object.hpp>
+#include <eosio/chain/producer_object.hpp>
+#include <eosio/chain/config.hpp>
+#include <eosio/chain/types.hpp>
+#include <eosio/chain/wasm_interface.hpp>
+
+#include <eosio/chain/contracts/chain_initializer.hpp>
+#include <eosio/chain/contracts/genesis_state.hpp>
+#include <eosio/chain/contracts/eos_contract.hpp>
+#include <eosio/chain/apply_context.hpp>
+#include <eosio/chain/chain_controller.hpp>
+
+#include <eosio/utilities/key_conversion.hpp>
+#include <eosio/utilities/common.hpp>
+#include <eosio/chain/wast_to_wasm.hpp>
+#include <eosio/chain/apply_context.hpp>
+#include <eosio/chain/authority.hpp>
+#include <eosio/chain/block_timestamp.hpp>
+
 namespace fc { class variant; }
 
 namespace eosio {
@@ -40,6 +81,36 @@ using chain::signed_block;
 using chain::block_trace;
 using chain::transaction_id_type;
 
+//using namespace bsoncxx;
+//using namespace mongocxx;
+
+//------------------------
+//using chain::chain_controller;
+//using std::unique_ptr;
+//using namespace appbase;
+//using chain::name;
+//using chain::uint128_t;
+//using chain::public_key_type;
+//using fc::optional;
+//using boost::container::flat_set;
+//using chain::asset;
+//using chain::authority;
+//using chain::contracts::abi_def;
+//using chain::contracts::abi_serializer;
+//--------------------------
+/**
+ *  @brief Specialization of datastream used to help determine the final size of a serialized value
+ */
+
+
+//struct public_key {
+//   char data[34];
+//};
+//--------------------------------------
+
+
+
+
 static appbase::abstract_plugin& _mongo_db_plugin = app().register_plugin<mongo_db_plugin>();
 
 class mongo_db_plugin_impl {
@@ -53,9 +124,11 @@ public:
    void _process_block(const block_trace&, const signed_block&);
    void process_irreversible_block(const signed_block&);
    void _process_irreversible_block(const signed_block&);
-
    void init();
    void wipe_database();
+
+   int intersection_count(const std::vector<account_name>& a1, const std::vector<account_name>& a2);
+   void check_proposal(std::string proposal);
 
    static abi_def eos_abi; // cached for common use
 
@@ -94,6 +167,19 @@ public:
    static const std::string actions_col;
    static const std::string action_traces_col;
    static const std::string accounts_col;
+
+    static const account_name proproposal;
+   static const account_name regproducer;
+   static const account_name vote;
+   static const account_name voteproducer;
+   static const account_name precord;
+   static const account_name createp;
+   //static const account_name contractstat;
+
+   static const std::string vote_col;
+   static const std::string producers_col;
+   static const std::string precord_col;
+   static const std::string contractstat_col;
 };
 
 const account_name mongo_db_plugin_impl::newaccount = "newaccount";
@@ -106,6 +192,18 @@ const std::string mongo_db_plugin_impl::actions_col = "Actions";
 const std::string mongo_db_plugin_impl::action_traces_col = "ActionTraces";
 const std::string mongo_db_plugin_impl::accounts_col = "Accounts";
 
+//action
+const account_name mongo_db_plugin_impl::regproducer = "regproducer";
+const account_name mongo_db_plugin_impl::vote = "vote";
+const account_name mongo_db_plugin_impl::voteproducer = "voteproducer";
+const account_name mongo_db_plugin_impl::createp = "createp";
+const account_name mongo_db_plugin_impl::proproposal = "proproposal";
+
+//mongodb table
+const std::string mongo_db_plugin_impl::vote_col = "Votes";
+const std::string mongo_db_plugin_impl::producers_col = "Producers";
+const std::string mongo_db_plugin_impl::precord_col = "Precord";
+const std::string mongo_db_plugin_impl::contractstat_col = "Contractstat";
 
 void mongo_db_plugin_impl::applied_irreversible_block(const signed_block& block) {
    try {
@@ -317,7 +415,8 @@ void mongo_db_plugin_impl::process_block(const block_trace& bt, const signed_blo
    }
 }
 
-void mongo_db_plugin_impl::_process_block(const block_trace& bt, const signed_block& block) {
+void mongo_db_plugin_impl::_process_block(const block_trace& bt, const signed_block& block)
+{
    // note bt.block is invalid at this point since it is a reference to internal chainbase block
    using namespace bsoncxx::types;
    using namespace bsoncxx::builder;
@@ -367,23 +466,27 @@ void mongo_db_plugin_impl::_process_block(const block_trace& bt, const signed_bl
    }
 
    int32_t msg_num = -1;
+
    bool actions_to_write = false;
-   auto process_action = [&](const std::string& trans_id_str, mongocxx::bulk_write& bulk_msgs, const chain::action& msg) -> auto {
+   auto process_action = [&](const std::string& trans_id_str, mongocxx::bulk_write& bulk_msgs, const chain::action& msg) -> auto
+   {
       auto msg_oid = bsoncxx::oid{};
       auto msg_doc = bsoncxx::builder::basic::document{};
       msg_doc.append(kvp("_id", b_oid{msg_oid}),
                      kvp("action_id", b_int32{msg_num}),
                      kvp("transaction_id", trans_id_str));
+
       msg_doc.append(kvp("authorization", [&msg](bsoncxx::builder::basic::sub_array subarr) {
          for (const auto& auth : msg.authorization) {
             subarr.append([&auth](bsoncxx::builder::basic::sub_document subdoc) {
-               subdoc.append(kvp("actor", auth.actor.to_string()),
-                             kvp("permission", auth.permission.to_string()));
+               subdoc.append(kvp("actor", auth.actor.to_string()),kvp("permission", auth.permission.to_string()));
             });
          }
       }));
+
       msg_doc.append(kvp("handler_account_name", msg.account.to_string()));
       msg_doc.append(kvp("name", msg.name.to_string()));
+
       add_data(msg_doc, accounts, msg);
       msg_doc.append(kvp("createdAt", b_date{now}));
       mongocxx::model::insert_one insert_msg{msg_doc.view()};
@@ -406,6 +509,7 @@ void mongo_db_plugin_impl::_process_block(const block_trace& bt, const signed_bl
                      kvp("receiver", act.receiver.to_string()),
                      kvp("action", b_oid{msg_oid}),
                      kvp("console", act.console));
+
       act_doc.append(kvp("data_access", [&act](bsoncxx::builder::basic::sub_array subarr) {
          for (const auto& data : act.data_access) {
             subarr.append([&data](bsoncxx::builder::basic::sub_document subdoc) {
@@ -426,7 +530,8 @@ void mongo_db_plugin_impl::_process_block(const block_trace& bt, const signed_bl
    std::map<chain::transaction_id_type, std::string> trx_status_map;
    bool transactions_in_block = false;
 
-   auto process_trx = [&](const chain::transaction& trx) -> auto {
+   auto process_trx = [&](const chain::transaction& trx) -> auto
+   {
       auto txn_oid = bsoncxx::oid{};
       auto doc = bsoncxx::builder::basic::document{};
       auto trx_id = trx.id();
@@ -463,16 +568,20 @@ void mongo_db_plugin_impl::_process_block(const block_trace& bt, const signed_bl
    mongocxx::bulk_write bulk_msgs{bulk_opts};
    mongocxx::bulk_write bulk_acts{bulk_opts};
    trx_num = 1000000;
-   for (const auto& rt: bt.region_traces) {
-      for (const auto& ct: rt.cycle_traces) {
-         for (const auto& st: ct.shard_traces) {
-            for (const auto& trx_trace: st.transaction_traces) {
+   for (const auto& rt: bt.region_traces)
+   {
+      for (const auto& ct: rt.cycle_traces)
+      {
+         for (const auto& st: ct.shard_traces)
+         {
+            for (const auto& trx_trace: st.transaction_traces)
+            {
                std::string trx_status = (trx_trace.status == chain::transaction_receipt::executed) ? "executed" :
                                         (trx_trace.status == chain::transaction_receipt::soft_fail) ? "soft_fail" :
                                         (trx_trace.status == chain::transaction_receipt::hard_fail) ? "hard_fail" :
                                         "unknown";
                trx_status_map[trx_trace.id] = trx_status;
-               
+
                for (const auto& req : trx_trace.deferred_transaction_requests) {
                   if ( req.contains<chain::deferred_transaction>() ) {
                      auto trx = req.get<chain::deferred_transaction>();
@@ -618,17 +727,157 @@ void mongo_db_plugin_impl::_process_irreversible_block(const signed_block& block
 
 }
 
-// For now providing some simple account processing to maintain eos_balance
-void mongo_db_plugin_impl::update_account(const chain::action& msg) {
-   using bsoncxx::builder::basic::kvp;
-   using bsoncxx::builder::stream::document;
-   using bsoncxx::builder::stream::open_document;
-   using bsoncxx::builder::stream::close_document;
-   using bsoncxx::builder::stream::finalize;
-   using namespace bsoncxx::types;
+// check pros and cons in proposal with active producers
+void mongo_db_plugin_impl::check_proposal(std::string proposal)
+{
+    using bsoncxx::builder::stream::document;
+    using bsoncxx::builder::stream::open_document;
+    using bsoncxx::builder::stream::close_document;
+    using bsoncxx::builder::stream::open_array;
+    using bsoncxx::builder::stream::close_array;
+    using bsoncxx::builder::stream::finalize;
 
-   if (msg.account != chain::config::system_account_name)
-      return;
+    auto precord = mongo_conn[db_name][precord_col];
+
+    document find_acc{};
+    find_acc << "proposal" << proposal;
+    auto result = precord.find_one(find_acc.view());
+    if(!result)
+    {
+        return;
+    }
+    auto doc = *result;
+    auto view = doc.view();
+
+
+    struct tm tm_time;
+    //bsoncxx::document::element expiration = view["expiration"];
+    //auto expiration =  view["expiration"].get_utf8().value;
+    //elog("--------------------------------${expiration}",("expiration",expiration.get_date().to_int64()));
+
+    std::string expiration = bsoncxx::string::to_string(view["expiration"].get_utf8().value);
+    strptime(expiration.c_str(),"%Y-%m-%dT%H:%M:%S", &tm_time);
+    time_t timer;
+    elog("-----------------------${mktime}",("mktime",mktime(&tm_time)));
+    elog("-----------------------${time}",("time",time(&timer)));
+    if(mktime(&tm_time) < time(&timer))
+    {
+        precord.delete_one(view);
+        return;
+    }
+    vector<account_name> producers;
+    chain_controller& cc = app().find_plugin<chain_plugin>()->chain();
+    //producers = cc.get_active_producers();
+    const auto& gpo = cc.get_global_properties();
+    for(const auto& producer : gpo.active_producers.producers)
+    {
+        producers.push_back(producer.producer_name);
+    }
+    vector<account_name> pros;
+    bsoncxx::array::view subarray1{view["pros"].get_array().value};
+    for (const bsoncxx::array::element& msg : subarray1)
+    {
+        pros.push_back(N(msg.get_utf8().value));
+    }
+    vector<account_name> cons;
+    bsoncxx::array::view subarray2{view["cons"].get_array().value};
+    for (const bsoncxx::array::element& msg : subarray2)
+    {
+        cons.push_back(N(msg.get_utf8().value));
+    }
+
+    std::vector<account_name> ac_producers(std::begin(producers), std::end(producers));
+
+    int pro_count = intersection_count(pros, ac_producers);
+
+    int con_count = intersection_count(cons, ac_producers);
+    if (pro_count >= 1)
+    {
+        auto contractstat = mongo_conn[db_name][contractstat_col];
+        // pro passed
+        if (eosio::name{N(proposal)} == eosio::name{N(upgradesys)})
+        {
+            document find_acc{};
+            bsoncxx::document::element code = view["code"];
+            bsoncxx::document::view subdoc = code.get_document().value;
+            bsoncxx::document::element code_id = subdoc["code_id"];
+            bsoncxx::document::element abi_id = subdoc["abi_id"];
+            find_acc << "contract" << "eosio";
+            auto account = contractstat.find_one(find_acc.view());
+            if (account)
+            {
+               //modify
+                document update_builder{};
+                update_builder << "$set" << open_document
+                               << "code" << open_document
+                               << "code_id" << code_id.get_utf8().value
+                               << "abi_id" << abi_id.get_utf8().value
+                               << close_document << close_document;
+                contractstat.update_one(find_acc.view(), update_builder.view());
+            }
+            else
+            {
+                //insert
+                document doc{};
+                doc << "contract" << "eosio"
+                    << "code" << open_document
+                    << "code_id" << code_id.get_utf8().value
+                    << "abi_id" << abi_id.get_utf8().value
+                    << close_document
+                    << "pros" << open_array << close_array
+                    << "cons" << open_array << close_array
+                    << "expiration" <<""
+                    << close_document;
+                //doc.append(kvp("creator",creator),kvp("proposal",proposal),kvp("expiration",bsoncxx::types::b_int64{expiration}));
+                if (!contractstat.insert_one(doc.view()))
+                {
+                    elog("Failed to insert_one contractstate");
+                }
+            }
+        }
+        // remove proposal
+        precord.delete_one(view);
+        return;
+    }
+
+    if (con_count >= 8)
+    {
+        // con passed
+        // remove proposal
+        precord.delete_one(view);
+        return;
+    }
+}
+
+int mongo_db_plugin_impl::intersection_count(const std::vector<account_name>& a1, const std::vector<account_name>& a2)
+{
+  int count = 0;
+  for (auto i:a1) {
+    if (std::find(std::begin(a2), std::end(a2), i) != std::end(a2)) {
+      count++;
+    }
+  }
+
+  return count;
+}
+// For now providing some simple account processing to maintain eos_balance
+void mongo_db_plugin_impl::update_account(const chain::action& msg)
+{
+   using bsoncxx::builder::basic::kvp;
+   using namespace bsoncxx::types;
+    using namespace boost::property_tree;
+    using namespace boost::gregorian;
+    using namespace boost;
+
+    using bsoncxx::builder::stream::document;
+    using bsoncxx::builder::stream::open_document;
+    using bsoncxx::builder::stream::close_document;
+    using bsoncxx::builder::stream::open_array;
+    using bsoncxx::builder::stream::close_array;
+    using bsoncxx::builder::stream::finalize;
+
+   /*if (msg.account != chain::config::system_account_name)
+      return; */
 
    if (msg.name == transfer) {
       auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -694,6 +943,179 @@ void mongo_db_plugin_impl::update_account(const chain::action& msg) {
 
       accounts.update_one(document{} << "_id" << from_account.view()["_id"].get_oid() << finalize, update_from.view());
    }
+   else if (msg.name == regproducer)
+   {
+       abi_serializer abis;
+       auto eosio_account = find_account(accounts, msg.account);
+       auto abi = fc::json::from_string(bsoncxx::to_json(eosio_account.view()["abi"].get_document())).as<abi_def>();
+       abis.set_abi(abi);
+       auto regInfo = abis.binary_to_variant(abis.get_action_type(msg.name), msg.data);
+       auto producer_name = regInfo["producer"].as<name>().to_string();
+       auto producer_key = regInfo["producer_key"].as<string>();
+
+//       auto args1 = fc::json::to_string( msg.authorization[0]);
+//       std::string actor,permission;
+//       ptree pt;
+//       std::stringstream stream;
+//       stream << args1;
+//       read_json<ptree>( stream, pt);
+//       actor = pt.get<std::string>("actor");
+//       permission = pt.get<std::string>("permission");
+
+       auto producers = mongo_conn[db_name][producers_col];
+
+       using bsoncxx::builder::stream::document;
+       document find_acc{};
+       find_acc << "owner" << producer_name;
+
+       auto account = producers.find_one(find_acc.view());
+       if (!account)
+       {
+          elog("Unable to find account ${n}", ("n", producer_name));
+          auto doc = bsoncxx::builder::basic::document{};
+          doc.append(kvp("owner",producer_name),kvp("total_votes",0),kvp("packed_key",producer_key));
+          if (!producers.insert_one(doc.view()))
+          {
+            elog("Failed to insert regproducers ${name}", ("name", producer_name));
+          }
+       }
+       else
+       {
+           auto tmp = find_account(producers,producer_name);
+           document update_to{};
+           update_to << "$set" << open_document << "packed_key" << producer_key
+                     << close_document;
+           producers.update_one(document{} << "_id" << tmp.view()["_id"].get_oid() << finalize, update_to.view());
+       }
+
+   }
+   else if (msg.name == vote)
+   {
+       /*TODO
+       abi_serializer abis;
+       auto eosio_account = find_account(accounts, msg.account);
+       auto abi = fc::json::from_string(bsoncxx::to_json(eosio_account.view()["abi"].get_document())).as<abi_def>();
+       abis.set_abi(abi);
+       auto regInfo = abis.binary_to_variant(abis.get_action_type(msg.name), msg.data);
+       auto producer_name = regInfo["producer"].as<name>().to_string();
+       auto producer_key = regInfo["producer_key"].as<string>();
+
+//       auto args1 = fc::json::to_string( msg.authorization[0]);
+//       std::string actor,permission;
+//       ptree pt;
+//       std::stringstream stream;
+//       stream << args1;
+//       read_json<ptree>( stream, pt);
+//       actor = pt.get<std::string>("actor");
+//       permission = pt.get<std::string>("permission");
+
+       auto voters = mongo_conn[db_name][vote_col];
+
+       using bsoncxx::builder::stream::document;
+       document find_acc{};
+       find_acc << "owner" << producer_name;
+
+       auto account = producers.find_one(find_acc.view());
+       if (!account)
+       {
+          elog("Unable to find account ${n}", ("n", producer_name));
+          auto doc = bsoncxx::builder::basic::document{};
+          doc.append(kvp("owner",producer_name),kvp("total_votes",0),kvp("packed_key",producer_key));
+          if (!producers.insert_one(doc.view()))
+          {
+            elog("Failed to insert regproducers ${name}", ("name", producer_name));
+          }
+       }
+       else
+       {
+           auto tmp = find_account(producers,producer_name);
+           document update_to{};
+           update_to << "$set" << open_document << "packed_key" << producer_key
+                     << close_document;
+           producers.update_one(document{} << "_id" << tmp.view()["_id"].get_oid() << finalize, update_to.view());
+       }*/
+   }
+   else if(msg.name == createp)
+   {
+       abi_serializer abis;
+       auto eosio_account = find_account(accounts, msg.account);
+       auto abi = fc::json::from_string(bsoncxx::to_json(eosio_account.view()["abi"].get_document())).as<abi_def>();
+       abis.set_abi(abi);
+
+       auto msgData = abis.binary_to_variant(abis.get_action_type(msg.name), msg.data);
+       auto creator = msgData["creator"].as<name>().to_string();
+       elog("======================================create creator ${creator}", ("creator", creator));
+       auto proposal = msgData["proposal"].as<name>().to_string();
+       auto  expiration = msgData["expiration"].as<chain::time_point>();
+       auto args = fc::json::to_string(msgData["data"]);
+       std::string code_id,abi_id;
+       ptree pt;
+       std::stringstream stream;
+       stream << args;
+       read_json<ptree>( stream, pt);
+       code_id = pt.get<std::string>("code_id");
+       abi_id = pt.get<std::string>("abi_id");
+       auto precord = mongo_conn[db_name][precord_col];
+
+       using bsoncxx::builder::stream::document;
+       document find_acc{};
+       find_acc << "proposal" << proposal;
+
+       auto account = precord.find_one(find_acc.view());
+       if (!account)
+       {
+          elog("Unable to find account ${n},so create it !", ("n", creator));
+          bsoncxx::builder::stream::document doc{};
+          doc << "creator" << creator
+                       << "proposal" << proposal
+                       << "data" << open_document << "code_id" << code_id
+                       << "abi_id" << abi_id
+                       << close_document
+                       << "pros"<<open_array<<close_array
+                       << "cons"<<open_array<<close_array
+                       << "expiration" << expiration;
+          //doc.append(kvp("creator",creator),kvp("proposal",proposal),kvp("expiration",bsoncxx::types::b_int64{expiration}));
+          if (!precord.insert_one(doc.view()))
+          {
+            elog("Failed to create createp ${name}", ("name", creator));
+          }
+       }
+   }
+   else if(msg.name ==proproposal)
+   {
+       auto eosio_account = find_account(accounts, msg.account);
+       auto abi = fc::json::from_string(bsoncxx::to_json(eosio_account.view()["abi"].get_document())).as<abi_def>();
+       abi_serializer abis;
+       abis.set_abi(abi);
+       auto msgData = abis.binary_to_variant(abis.get_action_type(msg.name), msg.data);
+       auto proposal = msgData["proposal"].as<name>().to_string();
+
+       auto precord = mongo_conn[db_name][precord_col];
+
+       using bsoncxx::builder::stream::document;
+       document find_acc{};
+       find_acc << "proposal" << proposal;
+       auto account = precord.find_one(find_acc.view());
+       if (account)
+       {
+          document filter_builder{};
+          filter_builder << "proposal"<< proposal;
+
+          document update_builder{};
+          update_builder << "$set" << open_document
+                         << "pros" << open_array << proposal
+                        << close_array << close_document;
+          precord.update_one(filter_builder.view(), update_builder.view());
+
+          document delete_builder{};
+          delete_builder << "$pull" <<open_document
+                         << "cons" << open_array << proposal
+                         << close_array << close_document;
+          precord.update_one(filter_builder.view(), delete_builder.view());
+          elog("================44444444444444444444444444444444444444======================");
+       }
+       check_proposal(proposal);
+   }
 }
 
 mongo_db_plugin_impl::mongo_db_plugin_impl()
@@ -721,12 +1143,22 @@ void mongo_db_plugin_impl::wipe_database() {
    auto trans = mongo_conn[db_name][trans_col]; // Transactions
    auto msgs = mongo_conn[db_name][actions_col]; // Actions
    auto action_traces = mongo_conn[db_name][action_traces_col]; // ActionTraces
+   auto vote = mongo_conn[db_name][vote_col]; // vote
+   auto producers = mongo_conn[db_name][producers_col]; // regproducer
+   auto precords = mongo_conn[db_name][precord_col]; // regproducer
+
+   auto contractstat = mongo_conn[db_name][contractstat_col]; // contractstat
+
 
    blocks.drop();
    trans.drop();
    accounts.drop();
    msgs.drop();
    action_traces.drop();
+   vote.drop();
+   producers.drop();
+   precords.drop();
+   contractstat.drop();
 }
 
 void mongo_db_plugin_impl::init() {
@@ -770,6 +1202,33 @@ void mongo_db_plugin_impl::init() {
       // ActionTraces indexes
       auto action_traces = mongo_conn[db_name][action_traces_col]; // ActionTraces
       action_traces.create_index(bsoncxx::from_json(R"xxx({ "transaction_id" : 1 })xxx"));
+
+      //vote
+      auto vote = mongo_conn[db_name][vote_col]; // ActionTraces
+      vote.create_index(bsoncxx::from_json(R"xxx({ "transaction_id" : 1 })xxx"));
+
+      auto producers = mongo_conn[db_name][producers_col]; // ActionTraces
+      producers.create_index(bsoncxx::from_json(R"xxx({ "transaction_id" : 1 })xxx"));
+
+      auto precords = mongo_conn[db_name][precord_col]; // ActionTraces
+      precords.create_index(bsoncxx::from_json(R"xxx({ "transaction_id" : 1 })xxx"));
+
+      auto contractstat = mongo_conn[db_name][contractstat_col]; // ActionTraces
+      contractstat.create_index(bsoncxx::from_json(R"xxx({ "transaction_id" : 1 })xxx"));
+
+//      bsoncxx::builder::stream::document precords_doc{};
+//      precords_doc << "creator" << ""
+//                   << "proposal" << ""
+//                   << "data" << open_document << "code_id" << ""
+//                   << "abi_id" << ""
+//                   << close_document
+//                   << "pros"<<open_array<<close_array
+//                   << "cons"<<open_array<<close_array
+//                   << "expiration" << 0;
+//      if (!precords.insert_one(precords_doc.view()))
+//      {
+//         elog("Failed to insert precords");
+//      }
    }
 }
 

@@ -7,38 +7,71 @@
           {"name":"value", "type":"string"}
       ]
     },{
-      "name": "set_producers",
+      "name": "transfer",
       "base": "",
       "fields": [
-        {"name":"version",    "type":"uint32"},
-        {"name":"producers",   "type":"producer_key[]"}
+         {"name":"from", "type":"account_name"},
+         {"name":"to", "type":"account_name"},
+         {"name":"quantity", "type":"asset"},
+         {"name":"memo", "type":"string"}
       ]
     },{
-      "name": "unset_producers",
+     "name": "issue",
+     "base": "",
+     "fields": [
+        {"name":"to", "type":"account_name"},
+        {"name":"quantity", "type":"asset"}
+     ]
+    },{
+      "name": "account",
       "base": "",
       "fields": [
-        {"name":"user",      "type":"account_name"},
+        {"name":"currency", "type":"uint64"},
+        {"name":"balance", "type":"uint64"}
       ]
     },{
-      "name": "producer_key",
+      "name": "currency_stats",
       "base": "",
       "fields": [
-        {"name":"producer_name",      "type":"account_name"},
-        {"name":"block_signing_key",  "type":"public_key"}
+        {"name":"currency", "type":"uint64"},
+        {"name":"supply", "type":"uint64"}
       ]
     },{
-      "name": "bond",
+      "name": "delegatebw",
       "base": "",
       "fields": [
-         {"name":"acc", "type":"account_name"},
-         {"name":"token", "type":"asset"}
+         {"name":"from", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"stake_net", "type":"asset"},
+         {"name":"stake_cpu", "type":"asset"},
+         {"name":"stake_storage", "type":"asset"}
       ]
     },{
-      "name": "unbond",
+      "name": "undelegatebw",
       "base": "",
       "fields": [
-         {"name":"acc", "type":"account_name"},
-         {"name":"token", "type":"asset"}
+         {"name":"from", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"unstake_net", "type":"asset"},
+         {"name":"unstake_cpu", "type":"asset"},
+         {"name":"unstake_bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "refund",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"}
+      ]
+    },{
+      "name": "delegated_bandwidth",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"to", "type":"account_name"},
+         {"name":"net_weight", "type":"asset"},
+         {"name":"cpu_weight", "type":"asset"},
+         {"name":"storage_stake", "type":"asset"},
+         {"name":"storage_bytes", "type":"uint64"}
       ]
     },{
       "name": "total_resources",
@@ -92,7 +125,7 @@
       "base": "",
       "fields": [
          {"name":"owner",              "type":"account_name"},
-         {"name":"total_votes",        "type":"uint64"},
+         {"name":"total_votes",        "type":"uint128"},
          {"name":"prefs",              "type":"eosio_parameters"},
          {"name":"packed_key",         "type":"uint8[]"},
          {"name":"per_block_payments", "type":"uint64"},
@@ -103,7 +136,8 @@
       "base": "",
       "fields": [
         {"name":"producer",     "type":"account_name"},
-        {"name":"producer_key", "type":"public_key"}
+        {"name":"producer_key", "type":"bytes"},
+        {"name":"prefs",        "type":"eosio_parameters"}
       ]
     },{
       "name": "unregprod",
@@ -112,10 +146,23 @@
         {"name":"producer",     "type":"account_name"}
       ]
     },{
+      "name": "regproxy",
+      "base": "",
+      "fields": [
+        {"name":"proxy",     "type":"account_name"}
+      ]
+    },{
+      "name": "unregproxy",
+      "base": "",
+      "fields": [
+        {"name":"proxy",     "type":"account_name"}
+      ]
+    },{
       "name": "voteproducer",
       "base": "",
       "fields": [
         {"name":"voter",     "type":"account_name"},
+        {"name":"proxy",     "type":"account_name"},
         {"name":"producers", "type":"account_name[]"}
       ]
     },{
@@ -123,66 +170,44 @@
       "base": "",
       "fields": [
         {"name":"owner",             "type":"account_name"},
+        {"name":"proxy",             "type":"account_name"},
         {"name":"last_update",       "type":"uint32"},
+        {"name":"is_proxy",          "type":"uint32"},
         {"name":"staked",            "type":"asset"},
         {"name":"unstaking",         "type":"asset"},
         {"name":"unstake_per_week",  "type":"asset"},
+        {"name":"proxied_votes",     "type":"uint128"},
         {"name":"producers",         "type":"account_name[]"},
         {"name":"deferred_trx_id",   "type":"uint32"},
         {"name":"last_unstake",      "type":"uint32"}
       ]
     },{
-      "name": "createp",
+      "name": "claimrewards",
       "base": "",
       "fields": [
-        {"name":"creator", "type":"account_name"},
-        {"name":"proposal", "type":"name"},
-        {"name":"data", "type":"proposal_data"},
-        {"name":"expiration", "type":"time"}
-      ]
-    },{
-      "name": "proposal_data",
-      "base": "",
-      "fields": [
-        {"name":"code_id", "type":"string"},
-        {"name":"abi_id", "type":"string"}
-      ]
-    },{
-      "name": "proposal_info",
-      "base": "",
-      "fields": [
-        {"name":"proposer", "type":"account_name"},
-        {"name":"creator", "type":"account_name"},
-        {"name":"proposal", "type":"name"}
-      ]
-    },{
-      "name": "precord_info",
-      "base": "",
-      "fields": [
-        {"name":"creator", "type":"account_name"},
-        {"name":"proposal", "type":"name"},
-        {"name":"data", "type":"proposal_data"},
-        {"name":"pros", "type":"account_name[]"},
-        {"name":"cons", "type":"account_name[]"},
-        {"name":"expiration", "type":"time"}
-      ]
-    },{
-      "name": "contractstat_info",
-      "base": "",
-      "fields": [
-        {"name":"contract", "type":"account_name"},
-        {"name":"code", "type":"proposal_data"},
-        {"name":"status", "type":"string"}
+        {"name":"owner",   "type":"account_name"}
       ]
     }
   ],
   "actions": [{
-      "name": "bond",
-      "type": "bond",
+      "name": "transfer",
+      "type": "transfer",
       "ricardian_contract": ""
     },{
-      "name": "unbond",
-      "type": "unbond",
+      "name": "issue",
+      "type": "issue",
+      "ricardian_contract": ""
+    },{
+      "name": "delegatebw",
+      "type": "delegatebw",
+      "ricardian_contract": ""
+    },{
+      "name": "undelegatebw",
+      "type": "undelegatebw",
+      "ricardian_contract": ""
+    },{
+      "name": "refund",
+      "type": "refund",
       "ricardian_contract": ""
     },{
       "name": "regproducer",
@@ -193,61 +218,28 @@
       "type": "unregprod",
       "ricardian_contract": ""
     },{
+      "name": "regproxy",
+      "type": "regproxy",
+      "ricardian_contract": ""
+    },{
+      "name": "unregproxy",
+      "type": "unregproxy",
+      "ricardian_contract": ""
+    },{
       "name": "voteproducer",
       "type": "voteproducer",
+      "ricardian_contract": ""
+    },{
+      "name": "claimrewards",
+      "type": "claimrewards",
       "ricardian_contract": ""
     },{
       "name": "nonce",
       "type": "nonce",
       "ricardian_contract": ""
-    },{
-      "name": "setprods",
-      "type": "set_producers",
-      "ricardian_contract": ""
-    },{
-      "name": "unsetprods",
-      "type": "unset_producers",
-      "ricardian_contract": ""
-    },{
-      "name": "createp",
-      "type": "createp",
-      "ricardian_contract": ""
-    },{
-      "name": "proproposal",
-      "type": "proposal_info",
-      "ricardian_contract": ""
-    },{
-      "name": "conproposal",
-      "type": "proposal_info",
-      "ricardian_contract": ""
     }
   ],
   "tables": [
-        {
-           "name":"voters",
-           "type":"voter_info",
-           "index_type":"i64",
-           "key_names": ["owner"],
-           "key_types": ["uint64"]
-        },{
-           "name":"producerinfo",
-           "type":"producer_info",
-           "index_type":"i64",
-           "key_names": ["owner"],
-           "key_types": ["uint64"]
-        },{
-          "name":"precord",
-          "type":"precord_info",
-          "index_type":"i64",
-          "key_names": ["proposal"],
-          "key_types": ["uint64"]
-        },{
-          "name":"contractstat",
-          "type":"contractstat_info",
-          "index_type":"i64",
-          "key_names": ["contract"],
-          "key_types": ["uint64"]
-        }
   ],
   "ricardian_clauses": []
 }

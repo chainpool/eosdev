@@ -4,6 +4,8 @@
  */
 #include "System.hpp"
 
+#include <eosiolib/action.h>
+#include <eosiolib/chain.h>
 #include <eosio.token/eosio.token.hpp>
 #include <eosiolib/datastream.hpp>
 #include <eosiolib/eosio.hpp>
@@ -17,6 +19,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <unordered_set>
+#include <vector>
 
 namespace eosiosystem {
 using eosio::indexed_by;

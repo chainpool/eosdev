@@ -69,3 +69,46 @@ cleos get table eosio.token usera accounts
 cleos get table eosio.token userb accounts
 
 cleos get table eosio.token EOS stat
+
+## proposal
+
+Creating wallet: default
+Save password to use in the future to unlock this wallet.
+Without password imported keys will not be retrievable.
+"PW5JkqGEwPv66VmArwuZAnfiawbiqVkAAnS8YY4aefgqDDtidAVo1"
+
+❯ cleos create key
+Private key: 5Ju6ujv8PHVsxbKy5ew3qfz8NSkjrwatw3M1khTChAJ9ZCYkD5q
+Public key: EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm
+
+eosio
+
+EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
+5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
+
+cleos wallet open && cleos wallet unlock --password=PW5JkqGEwPv66VmArwuZAnfiawbiqVkAAnS8YY4aefgqDDtidAVo1
+
+cleos wallet import 5Ju6ujv8PHVsxbKy5ew3qfz8NSkjrwatw3M1khTChAJ9ZCYkD5q
+
+cleos set contract eosio contracts/System
+
+cleos create account eosio user1 EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm
+
+cleos create account eosio user2 EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm
+
+cleos create account eosio user3 EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm EOS5ucksZfrXAA1d5ErwDVNSryCggp5zn8o5EJPSxEk69CCPbinpm
+
+cleos push action eosio createp "$(cat createp.json)" -p user1
+
+cleos push action eosio proproposal '["user1", "user1", "upgradesys"]' -p user1
+
+cleos push action eosio proproposal '["user1", "user1", "upgradesys"]' -p user1 // should error
+
+cleos push action eosio proproposal '["user2", "user1", "upgradesys"]' -p user2
+
+cleos push action eosio conproposal '["user3", "user1", "upgradesys"]' -p user3
+
+cleos push action eosio conproposal '["user2", "user1", "upgradesys"]' -p user2
+
+cleos get table eosio eosio precord
+cleos get table eosio eosio contractstat
