@@ -23,6 +23,7 @@
 
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
+// #include <eosio/chain/contract_table_objects.hpp>
 
 namespace eosio { namespace chain {
 
@@ -119,12 +120,47 @@ void apply_eosio_newaccount(apply_context& context) {
 
 } FC_CAPTURE_AND_RETHROW( (create) ) }
 
+static void copy_inline_row(const chain::key_value_object& obj, vector<char>& data) {
+  data.resize( obj.value.size() );
+  memcpy( data.data(), obj.value.data(), obj.value.size() );
+}
+
+// config::system_account_name
+
+bool allow_setcode(apply_context& context, std::string code_id) {
+  const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
+  chain::abi_def abi;
+  if(abi_serializer::to_abi(code_account.abi, abi)) {
+    abi_serializer abis(abi);
+    const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
+    if (t_id != nullptr) {
+      const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
+      auto it = idx.lower_bound(boost::make_tuple(t_id->id, config::system_account_name));
+      if (it != idx.end()) {
+        vector<char> data;
+        copy_inline_row(*it, data);
+        auto ct = abis.binary_to_variant("contractstat_info", data);
+        auto& obj = ct.get_object();
+        auto code_obj = obj["code"].get_object();
+        auto cid = code_obj["code_id"].as_string();
+        if (cid == code_id) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 void apply_eosio_setcode(apply_context& context) {
    const auto& cfg = context.control.get_global_properties().configuration;
 
    auto& db = context.db;
+
    auto  act = context.act.data_as<setcode>();
-   context.require_authorization(act.account);
+   context.setcode_require_authorization(act.account);
 //   context.require_write_lock( config::eosio_auth_scope );
 
    FC_ASSERT( act.vmtype == 0 );
@@ -140,6 +176,22 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t code_size = (int64_t)act.code.size();
    int64_t old_size = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size = code_size * config::setcode_ram_bytes_multiplier;
+
+   // Only allow eosio contract to setcode
+   if (act.account != eosio::chain::name{N(eosio)}) {
+     // exit
+     FC_THROW("only allow eosio to setcode");
+   }
+
+   // Not first time setcode
+   if (account.code_version != fc::sha256::sha256()) {
+     // get allow_setcode from system contract table
+     if (!allow_setcode(context, code_id.str())) {
+       // exit
+       FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
+     }
+     // FC_THROW("setcode twice is not allowed");
+   }
 
    FC_ASSERT( account.code_version != code_id, "contract is already running this version of code" );
 //   wlog( "set code: ${size}", ("size",act.code.size()));
@@ -162,7 +214,13 @@ void apply_eosio_setabi(apply_context& context) {
    auto& db = context.db;
    auto  act = context.act.data_as<setabi>();
 
-   context.require_authorization(act.account);
+   context.setcode_require_authorization(act.account);
+
+   // Only allow eosio contract.
+   if (act.account != eosio::chain::name{N(eosio)}) {
+     // exit
+     FC_THROW("only allow eosio to setabi");
+   }
 
    // if system account append native abi
    if ( act.account == eosio::chain::config::system_account_name ) {
