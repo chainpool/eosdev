@@ -23,6 +23,7 @@
 
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
+// #include <eosio/chain/contract_table_objects.hpp>
 
 namespace eosio { namespace chain {
 
@@ -119,10 +120,53 @@ void apply_eosio_newaccount(apply_context& context) {
 
 } FC_CAPTURE_AND_RETHROW( (create) ) }
 
+static void copy_inline_row(const chain::key_value_object& obj, vector<char>& data) {
+  data.resize( obj.value.size() );
+  memcpy( data.data(), obj.value.data(), obj.value.size() );
+}
+
+// config::system_account_name
+
+bool allow_setcode(apply_context& context) {
+  const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
+  //const abi_def abi = get_abi( db, N(eosio) );
+  chain::abi_def abi;
+  if(abi_serializer::to_abi(code_account.abi, abi)) {
+    abi_serializer abis(abi);
+    //get_table_rows_ex<key_value_index, by_scope_primary>(p,abi);
+    const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
+    if (t_id != nullptr) {
+      const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
+      auto it = idx.lower_bound(boost::make_tuple(t_id->id, config::system_account_name));
+      if (it != idx.end()) {
+        vector<char> data;
+        copy_inline_row(*it, data);
+        auto ct = abis.binary_to_variant("contract", data);
+        wlog("allow_setcode: ct: ${ct}", ("ct", ct));
+        return true;
+      }
+    }
+  }
+  // const auto iter = context.db_find_i64(N(eosio), N(eosio), N(contractstat), N(eosio));
+  // if (iter != -1) {
+  //   const auto buffer_size = context.db_get_i64(iter, nullptr, 0);
+  //   bytes value(buffer_size);
+  //   wlog("allow_setcode: buffer_size: ${bs}", ("bs", buffer_size));
+
+  //   const auto written_size = context.db_get_i64(iter, value.data(), buffer_size);
+  //   assert(written_size == buffer_size);
+  //   wlog("allow_setcode: data: ${data}", ("data", value));
+
+  //   return true;
+  // }
+  return false;
+}
+
 void apply_eosio_setcode(apply_context& context) {
    const auto& cfg = context.control.get_global_properties().configuration;
 
    auto& db = context.db;
+
    auto  act = context.act.data_as<setcode>();
    context.setcode_require_authorization(act.account);
 //   context.require_write_lock( config::eosio_auth_scope );
@@ -149,7 +193,12 @@ void apply_eosio_setcode(apply_context& context) {
 
    // Not first time setcode
    if (account.code_version != fc::sha256::sha256()) {
-     FC_THROW("setcode twice is not allowed");
+     // get allow_setcode from system contract table
+     if (!allow_setcode(context)) {
+       // exit
+       FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
+     }
+     // FC_THROW("setcode twice is not allowed");
    }
 
    FC_ASSERT( account.code_version != code_id, "contract is already running this version of code" );
