@@ -36,6 +36,13 @@ class memory_db {
    /// Fields:
    public:
       chainbase::database&          db;  ///< database where state is stored
+      struct account {
+         account_name name;
+         asset    balance;
+         asset    lock_balance;
+         uint64_t primary_key()const { return name; }
+       };
 };
 } } // namespace eosio::chain
 
+FC_REFLECT(eosio::chain::memory_db::account, (name)(balance)(lock_balance) )
