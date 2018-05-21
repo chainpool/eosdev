@@ -26,6 +26,7 @@ add_library( eosio_chain
               wasm_eosio_validation.cpp
               wasm_eosio_injection.cpp
               apply_context.cpp
+              memory_db.cpp
               abi_serializer.cpp
               asset.cpp
 
