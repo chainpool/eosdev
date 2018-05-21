@@ -360,6 +360,20 @@ struct controller_impl {
    }
 
    void initialize_producer() {
+      for (auto producer : conf.genesis.initial_producer_map) {
+        auto name = producer.first;
+        auto public_key = producer.second;
+        authority auth(public_key);
+        create_native_account(name, auth, auth, false);
+        memory_db::producer_info obj;
+        obj.owner = name;
+        obj.producer_key = public_key;
+        obj.rewards_rate = 0.01;
+        auto pk = obj.primary_key();
+        auto db = memory_db(self);
+        bytes data = fc::raw::pack(obj);
+        db.db_store_i64(N(eosio), N(eosio), N(producers), N(name), pk, data.data(), data.size() );
+      }
    }
 
    void accounts_table(account_name name, asset balance) {
@@ -387,10 +401,13 @@ struct controller_impl {
        if (name[i] >= '6' && name[i] <= '9') {
          namef.push_back(name[i] - 5);
        }
+     }
+     if (namef.size() < 12) {
        FC_ASSERT(false, "initialize format name failed");
      }
      return namef;
    }
+
    void initialize_account() {
      for (auto account : conf.genesis.initial_account_map) {
        auto public_key = account.first;
@@ -426,6 +443,7 @@ struct controller_impl {
       authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       initialize_account();
+      initialize_producer();
 
       auto empty_authority = authority(1, {}, {});
       auto active_producers_authority = authority(1, {}, {});
