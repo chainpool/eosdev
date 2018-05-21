@@ -7,6 +7,7 @@
 
 #include <eosio/chain/chain_config.hpp>
 #include <eosio/chain/types.hpp>
+#include <eosio/chain/asset.hpp>
 
 #include <fc/crypto/sha256.hpp>
 
@@ -39,7 +40,8 @@ struct genesis_state {
       .max_generated_transaction_count      = config::default_max_gen_trx_count,
    };
 
-   time_point                               initial_timestamp = fc::time_point::from_iso_string( "2018-03-02T12:00:00" );
+   time_point                               initial_timestamp = fc::time_point::from_iso_string( "2018-05-02T12:00:00" );
+
    public_key_type                          initial_key = fc::variant("EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV").as<public_key_type>();
 
    /**
@@ -53,10 +55,16 @@ struct genesis_state {
     * This is the SHA256 serialization of the genesis_state.
     */
    chain_id_type compute_chain_id() const;
+   std::map<public_key_type, asset>           initial_account_map = {
+     { fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>(), asset(1000000000) }
+   };
+   std::map<account_name, public_key_type>    initial_producer_map = {
+   { N(chainpool), fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>() }
+   };
 };
 
 } } // namespace eosio::chain
 
 
 FC_REFLECT(eosio::chain::genesis_state,
-           (initial_timestamp)(initial_key)(initial_configuration)(initial_chain_id))
+           (initial_timestamp)(initial_key)(initial_configuration)(initial_chain_id)(initial_account_map)(initial_producer_map))
