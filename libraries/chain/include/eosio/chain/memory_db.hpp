@@ -41,8 +41,31 @@ class memory_db {
          asset    balance;
          asset    lock_balance;
          uint64_t primary_key()const { return name; }
-       };
+      };
+
+      /*struct public_key {
+        char data[34];
+      };*/
+
+      struct producer_info {
+         account_name owner;
+         uint64_t total_votes = 0;
+         public_key_type producer_key;
+         uint32_t last_produced_time = 0;
+         uint32_t produced_blocks;
+         asset rewards_pool = asset(0);
+         uint32_t last_dividend;
+         asset settlement_balance;
+         double rewards_rate;
+
+         uint64_t primary_key() const { return owner; }
+         uint64_t by_votes() const { return total_votes; }
+         //TODO:check producer_key
+         bool active() const { return 34 == sizeof(producer_key); }
+      };
 };
 } } // namespace eosio::chain
 
 FC_REFLECT(eosio::chain::memory_db::account, (name)(balance)(lock_balance) )
+FC_REFLECT(eosio::chain::memory_db::producer_info, (owner)(total_votes)(producer_key)(last_produced_time)(produced_blocks)(rewards_pool)(last_dividend)(settlement_balance)(rewards_rate))
+
