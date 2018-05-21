@@ -6,6 +6,7 @@
 #include <eosio/chain/fork_database.hpp>
 
 #include <eosio/chain/account_object.hpp>
+#include <eosio/chain/memory_db.hpp>
 #include <eosio/chain/block_summary_object.hpp>
 #include <eosio/chain/global_property_object.hpp>
 #include <eosio/chain/contract_table_objects.hpp>
@@ -348,18 +349,49 @@ struct controller_impl {
    void initialize_producer() {
    }
 
+   void accounts_table(account_name name, asset balance) {
+      memory_db::account obj;
+      obj.name = name;
+      obj.balance = balance;
+      bytes data = fc::raw::pack(obj);
+      auto pk = obj.primary_key();
+      auto db = memory_db(self);
+      db.db_store_i64(N(eosio), N(eosio), N(accounts), N(name), pk, data.data(), data.size() );
+   }
+
+   bytes format_name(std::string name) {
+     bytes namef;
+     for (int i = 0; i < 12; i++ ) {
+       if (name[i] >= 'A' && name[i] <= 'Z') {
+         namef.push_back(name[i] + 32);
+       }
+       if (name[i] >= 'a' && name[i] <= 'z') {
+         namef.push_back(name[i]);
+       }
+       if (name[i] >= '1' && name[i] <= '5') {
+         namef.push_back(name[i]);
+       }
+       if (name[i] >= '6' && name[i] <= '9') {
+         namef.push_back(name[i] - 5);
+       }
+       FC_ASSERT(false, "initialize format name failed");
+     }
+     return namef;
+   }
    void initialize_account() {
      for (auto account : conf.genesis.initial_account_map) {
        auto public_key = account.first;
        auto amount = account.second;
        auto name = std::string(public_key);
        name = name.substr(name.size() - 12, 12);
-       ilog("---name:${name}, publickey: ${pb}, amount: ${amount}", ("name", name)("pb", public_key)("amount", amount));
-      authority auth(public_key);
-      create_native_account(string_to_name(name.c_str()), auth, auth, false);
-       
+       authority auth(public_key);
+       bytes namef = format_name(name);
+       ilog("---name:${name}, publickey: ${pb}, amount: ${amount}", ("name", namef.data())("pb", public_key)("amount", amount));
+       create_native_account(string_to_name(namef.data()), auth, auth, false);
+       accounts_table(string_to_name(namef.data()), amount);
      }
    }
+
    void initialize_database() {
       // Initialize block summary index
       for (int i = 0; i < 0x10000; i++)
@@ -380,6 +412,7 @@ struct controller_impl {
 
       authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
+      initialize_account();
 
       auto empty_authority = authority(1, {}, {});
       auto active_producers_authority = authority(1, {}, {});
