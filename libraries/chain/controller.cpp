@@ -360,6 +360,21 @@ struct controller_impl {
       resource_limits.verify_account_ram_usage(name);
    }
 
+   void initialize_producer() {
+   }
+
+   void initialize_account() {
+     for (auto account : conf.genesis.initial_account_map) {
+       auto public_key = account.first;
+       auto amount = account.second;
+       auto name = std::string(public_key);
+       name = name.substr(name.size() - 12, 12);
+       ilog("---name:${name}, publickey: ${pb}, amount: ${amount}", ("name", name)("pb", public_key)("amount", amount));
+      authority auth(public_key);
+      create_native_account(string_to_name(name.c_str()), auth, auth, false);
+       
+     }
+   }
    void initialize_database() {
       // Initialize block summary index
       for (int i = 0; i < 0x10000; i++)
