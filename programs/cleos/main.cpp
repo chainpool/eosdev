@@ -149,6 +149,7 @@ FC_DECLARE_EXCEPTION( localized_exception, 10000000, "an error occured" );
 
 string url = "http://localhost:8888/";
 string wallet_url = "http://localhost:8900/";
+int64_t wallet_unlock_timeout = 0;
 
 auto   tx_expiration = fc::seconds(30);
 string tx_ref_block_num_or_id;
@@ -462,7 +463,7 @@ chain::action create_delegate(const name& from, const name& receiver, const asse
 
 fc::variant regproducer_variant(const account_name& producer,
                                 public_key_type key,
-                                string url) {
+                                string url, uint16_t location = 0) {
    /*
    fc::variant_object params = fc::mutable_variant_object()
          ("max_block_net_usage", config::default_max_block_net_usage)
@@ -475,13 +476,6 @@ fc::variant regproducer_variant(const account_name& producer,
          ("max_block_cpu_usage", config::default_max_block_cpu_usage)
          ("target_block_cpu_usage_pct", config::default_target_block_cpu_usage_pct)
          ("max_transaction_cpu_usage", config::default_max_transaction_cpu_usage)
-         ("base_per_transaction_cpu_usage", config::default_base_per_transaction_cpu_usage)
-         ("base_per_action_cpu_usage", config::default_base_per_action_cpu_usage)
-         ("base_setcode_cpu_usage", config::default_base_setcode_cpu_usage)
-         ("per_signature_cpu_usage", config::default_per_signature_cpu_usage)
-         ("cpu_usage_leeway", config::default_cpu_usage_leeway)
-         ("context_free_discount_cpu_usage_num", config::default_context_free_discount_cpu_usage_num)
-         ("context_free_discount_cpu_usage_den", config::default_context_free_discount_cpu_usage_den)
          ("max_transaction_lifetime", config::default_max_trx_lifetime)
          ("deferred_trx_expiration_window", config::default_deferred_trx_expiration_window)
          ("max_transaction_delay", config::default_max_trx_delay)
@@ -497,7 +491,9 @@ fc::variant regproducer_variant(const account_name& producer,
    return fc::mutable_variant_object()
             ("producer", producer)
             ("producer_key", key)
-            ("url", url);
+            ("url", url)
+            ("location", 0)
+            ;
 }
 
 chain::action create_transfer(const string& contract, const name& sender, const name& recipient, asset amount, const string& memo ) {
@@ -526,7 +522,7 @@ chain::action create_setabi(const name& account, const abi_def& abi) {
       tx_permission.empty() ? vector<chain::permission_level>{{account,config::active_name}} : get_account_permissions(tx_permission),
       setabi{
          .account   = account,
-         .abi       = abi
+         .abi       = fc::raw::pack(abi)
       }
    };
 }
@@ -730,7 +726,7 @@ bool port_used(uint16_t port) {
 void try_port( uint16_t port, uint32_t duration ) {
    using namespace std::chrono;
    auto start_time = duration_cast<std::chrono::milliseconds>( system_clock::now().time_since_epoch() ).count();
-   while ( !port_used(port)) { 
+   while ( !port_used(port)) {
       if (duration_cast<std::chrono::milliseconds>( system_clock::now().time_since_epoch()).count() - start_time > duration ) {
          std::cerr << "Unable to connect to keosd, if keosd is running please kill the process and try again.\n";
          throw connection_exception(fc::log_messages{FC_LOG_MESSAGE(error, "Unable to connect to keosd")});
@@ -765,7 +761,14 @@ void ensure_keosd_running() {
     if (boost::filesystem::exists(binPath)) {
         namespace bp = boost::process;
         binPath = boost::filesystem::canonical(binPath);
-        ::boost::process::child keos(binPath, "--http-server-address=127.0.0.1:" + parsed_url.port,
+
+        vector<std::string> pargs;
+        pargs.push_back("--http-server-address=127.0.0.1:" + parsed_url.port);
+        if (wallet_unlock_timeout > 0) {
+            pargs.push_back("--unlock-timeout=" + fc::to_string(wallet_unlock_timeout));
+        }
+
+        ::boost::process::child keos(binPath, pargs,
                                      bp::std_in.close(),
                                      bp::std_out > bp::null,
                                      bp::std_err > bp::null);
@@ -795,12 +798,14 @@ struct register_producer_subcommand {
    string producer_str;
    string producer_key_str;
    string url;
+   uint16_t loc = 0;
 
    register_producer_subcommand(CLI::App* actionRoot) {
       auto register_producer = actionRoot->add_subcommand("regproducer", localized("Register a new producer"));
       register_producer->add_option("account", producer_str, localized("The account to register as a producer"))->required();
       register_producer->add_option("producer_key", producer_key_str, localized("The producer's public key"))->required();
       register_producer->add_option("url", url, localized("url where info about producer can be found"), true);
+      register_producer->add_option("location", loc, localized("relative location for purpose of nearest neighbor scheduling"), 0);
       add_standard_transaction_options(register_producer);
 
 
@@ -810,7 +815,7 @@ struct register_producer_subcommand {
             producer_key = public_key_type(producer_key_str);
          } EOS_RETHROW_EXCEPTIONS(public_key_type_exception, "Invalid producer public key: ${public_key}", ("public_key", producer_key_str))
 
-         auto regprod_var = regproducer_variant(producer_str, producer_key, url );
+         auto regprod_var = regproducer_variant(producer_str, producer_key, url, loc );
          send_actions({create_action({permission_level{producer_str,config::active_name}}, config::system_account_name, N(regproducer), regprod_var)});
       });
    }
@@ -845,13 +850,13 @@ struct create_account_subcommand {
          createAccount->add_option("--buy-ram-EOS", buy_ram_eos,
                                    (localized("The amount of RAM bytes to purchase for the new account in EOS")));
          createAccount->add_flag("--transfer", transfer,
-                                 (localized("Transfer?")));
+                                 (localized("Transfer voting power and right to unstake EOS to receiver")));
       }
 
       add_standard_transaction_options(createAccount);
 
       createAccount->set_callback([this] {
-            if( !active_key_str.size() ) 
+            if( !active_key_str.size() )
                active_key_str = owner_key_str;
             public_key_type owner_key, active_key;
             try {
@@ -933,56 +938,132 @@ struct vote_producers_subcommand {
    }
 };
 
-struct list_producers_subcommand {
-   bool print_json = false;
-   bool sort_names = false;
+struct approve_producer_subcommand {
+   eosio::name voter;
+   eosio::name producer_name;
 
-   list_producers_subcommand(CLI::App* actionRoot) {
-      auto list_producers = actionRoot->add_subcommand("listproducers", localized("List producers"));
-      list_producers->add_flag("--json,-j", print_json, localized("Output in JSON format") );
-      list_producers->add_flag("--sort-account-names,-n", sort_names, localized("Sort by account names (default order is by votes)") );
-      list_producers->set_callback([this] {
+   approve_producer_subcommand(CLI::App* actionRoot) {
+      auto approve_producer = actionRoot->add_subcommand("approve", localized("Add one producer to list of voted producers"));
+      approve_producer->add_option("voter", voter, localized("The voting account"))->required();
+      approve_producer->add_option("producer", producer_name, localized("The account to vote for"))->required();
+      add_standard_transaction_options(approve_producer);
+
+      approve_producer->set_callback([this] {
             auto result = call(get_table_func, fc::mutable_variant_object("json", true)
                                ("code", name(config::system_account_name).to_string())
                                ("scope", name(config::system_account_name).to_string())
-                               ("table", "producers")
+                               ("table", "voters")
+                               ("table_key", "owner")
+                               ("lower_bound", voter.value)
+                               ("limit", 1)
             );
-
-            if ( !print_json ) {
-               auto res = result.as<eosio::chain_apis::read_only::get_table_rows_result>();
-               std::vector<std::tuple<std::string, std::string, std::string, std::string>> v;
-               for ( auto& row : res.rows ) {
-                  auto& r = row.get_object();
-                  v.emplace_back( r["owner"].as_string(), r["total_votes"].as_string(), r["producer_key"].as_string(), r["url"].as_string() );
-
-               }
-               if ( !v.empty() ) {
-                  if ( sort_names ) {
-                     std::sort( v.begin(), v.end(), [](auto a, auto b) { return std::get<0>(a) < std::get<0>(b); } );
-                  } else {
-                     std::sort( v.begin(), v.end(), [](auto a, auto b) {
-                           return std::get<1>(a) < std::get<1>(b) || (std::get<1>(a) == std::get<1>(b) && std::get<0>(a) < std::get<0>(b)); }
-                     );
-                  }
-
-                  std::cout << std::left << std::setw(14) << "Producer" << std::setw(55) << "Producer key"
-                            << std::setw(50) << "Url" << "Total votes" << std::endl;
-                  for ( auto& x : v ) {
-                     std::cout << std::left << std::setw(14) << std::get<0>(x) << std::setw(55) << std::get<2>(x)
-                               << std::setw(50) << std::get<3>(x) << std::get<1>(x) << std::endl;
-                  }
-               } else {
-                  std::cout << "No producers found" << std::endl;
-               }
-            } else {
-               if ( sort_names ) {
-                  FC_THROW("Sorting producers is not supported for JSON format");
-               }
-               std::cout << fc::json::to_pretty_string(result)
-                         << std::endl;
+            auto res = result.as<eosio::chain_apis::read_only::get_table_rows_result>();
+            if ( res.rows.empty() || res.rows[0]["owner"].as_string() != name(voter).to_string() ) {
+               std::cerr << "Voter info not found for account " << voter << std::endl;
+               return;
             }
+            FC_ASSERT( 1 == res.rows.size(), "More than one voter_info for account" );
+            auto prod_vars = res.rows[0]["producers"].get_array();
+            vector<eosio::name> prods;
+            for ( auto& x : prod_vars ) {
+               prods.push_back( name(x.as_string()) );
+            }
+            prods.push_back( producer_name );
+            std::sort( prods.begin(), prods.end() );
+            auto it = std::unique( prods.begin(), prods.end() );
+            if (it != prods.end() ) {
+               std::cerr << "Producer \"" << producer_name << "\" is already on the list." << std::endl;
+               return;
+            }
+            fc::variant act_payload = fc::mutable_variant_object()
+               ("voter", voter)
+               ("proxy", "")
+               ("producers", prods);
+            send_actions({create_action({permission_level{voter,config::active_name}}, config::system_account_name, N(voteproducer), act_payload)});
+      });
+   }
+};
+
+struct unapprove_producer_subcommand {
+   eosio::name voter;
+   eosio::name producer_name;
+
+   unapprove_producer_subcommand(CLI::App* actionRoot) {
+      auto approve_producer = actionRoot->add_subcommand("unapprove", localized("Remove one producer from list of voted producers"));
+      approve_producer->add_option("voter", voter, localized("The voting account"))->required();
+      approve_producer->add_option("producer", producer_name, localized("The account to remove from voted producers"))->required();
+      add_standard_transaction_options(approve_producer);
+
+      approve_producer->set_callback([this] {
+            auto result = call(get_table_func, fc::mutable_variant_object("json", true)
+                               ("code", name(config::system_account_name).to_string())
+                               ("scope", name(config::system_account_name).to_string())
+                               ("table", "voters")
+                               ("table_key", "owner")
+                               ("lower_bound", voter.value)
+                               ("limit", 1)
+            );
+            auto res = result.as<eosio::chain_apis::read_only::get_table_rows_result>();
+            if ( res.rows.empty() || res.rows[0]["owner"].as_string() != name(voter).to_string() ) {
+               std::cerr << "Voter info not found for account " << voter << std::endl;
+               return;
+            }
+            FC_ASSERT( 1 == res.rows.size(), "More than one voter_info for account" );
+            auto prod_vars = res.rows[0]["producers"].get_array();
+            vector<eosio::name> prods;
+            for ( auto& x : prod_vars ) {
+               prods.push_back( name(x.as_string()) );
+            }
+            auto it = std::remove( prods.begin(), prods.end(), producer_name );
+            if (it == prods.end() ) {
+               std::cerr << "Cannot remove: producer \"" << producer_name << "\" is not on the list." << std::endl;
+               return;
+            }
+            prods.erase( it, prods.end() ); //should always delete only one element
+            fc::variant act_payload = fc::mutable_variant_object()
+               ("voter", voter)
+               ("proxy", "")
+               ("producers", prods);
+            send_actions({create_action({permission_level{voter,config::active_name}}, config::system_account_name, N(voteproducer), act_payload)});
+      });
+   }
+};
+
+struct list_producers_subcommand {
+   bool print_json = false;
+   uint32_t limit = 50;
+   std::string lower;
+
+   list_producers_subcommand(CLI::App* actionRoot) {
+      auto list_producers = actionRoot->add_subcommand("listproducers", localized("List producers"));
+      list_producers->add_flag("--json,-j", print_json, localized("Output in JSON format"));
+      list_producers->add_option("-l,--limit", limit, localized("The maximum number of rows to return"));
+      list_producers->add_option("-L,--lower", lower, localized("lower bound value of key, defaults to first"));
+      list_producers->set_callback([this] {
+         auto rawResult = call(get_producers_func, fc::mutable_variant_object
+            ("json", true)("lower_bound", lower)("limit", limit));
+         if ( print_json ) {
+            std::cout << fc::json::to_pretty_string(rawResult) << std::endl;
+            return;
          }
-      );
+         auto result = rawResult.as<eosio::chain_apis::read_only::get_producers_result>();
+         if ( result.rows.empty() ) {
+            std::cout << "No producers found" << std::endl;
+            return;
+         }
+         auto weight = result.total_producer_vote_weight;
+         if ( !weight )
+            weight = 1;
+         printf("%-13s %-54s %-59s %s\n", "Producer", "Producer key", "Url", "Scaled votes");
+         for ( auto& row : result.rows )
+            printf("%-13.13s %-54.54s %-59.59s %1.4f\n", 
+                   row["owner"].as_string().c_str(),
+                   row["producer_key"].as_string().c_str(),
+                   row["url"].as_string().c_str(),
+                   row["total_votes"].as_double() / weight);
+         if ( !result.more.empty() )
+            std::cout << "-L " << result.more << " for more" << std::endl;
+      });
    }
 };
 
@@ -1000,7 +1081,7 @@ struct delegate_bandwidth_subcommand {
       delegate_bandwidth->add_option("receiver", receiver_str, localized("The account to receive the delegated bandwidth"))->required();
       delegate_bandwidth->add_option("stake_net_quantity", stake_net_amount, localized("The amount of EOS to stake for network bandwidth"))->required();
       delegate_bandwidth->add_option("stake_cpu_quantity", stake_cpu_amount, localized("The amount of EOS to stake for CPU bandwidth"))->required();
-      delegate_bandwidth->add_flag("--transfer", transfer, localized("specify to stake in name of receiver rather than in name of from"))->required();
+      delegate_bandwidth->add_flag("--transfer", transfer, localized("Transfer voting power and right to unstake EOS to receiver"));
       add_standard_transaction_options(delegate_bandwidth);
 
       delegate_bandwidth->set_callback([this] {
@@ -1039,6 +1120,43 @@ struct undelegate_bandwidth_subcommand {
                   ("unstake_net_quantity", to_asset(unstake_net_amount))
                   ("unstake_cpu_quantity", to_asset(unstake_cpu_amount));
          send_actions({create_action({permission_level{from_str,config::active_name}}, config::system_account_name, N(undelegatebw), act_payload)});
+      });
+   }
+};
+
+struct list_bw_subcommand {
+   eosio::name account;
+   bool print_json = false;
+
+   list_bw_subcommand(CLI::App* actionRoot) {
+      auto list_bw = actionRoot->add_subcommand("listbw", localized("List delegated bandwidth"));
+      list_bw->add_option("account", account, localized("The account delegated bandwidth"))->required();
+      list_bw->add_flag("--json,-j", print_json, localized("Output in JSON format") );
+
+      list_bw->set_callback([this] {
+            //get entire table in scope of user account
+            auto result = call(get_table_func, fc::mutable_variant_object("json", true)
+                               ("code", name(config::system_account_name).to_string())
+                               ("scope", account.to_string())
+                               ("table", "delband")
+            );
+            if (!print_json) {
+               auto res = result.as<eosio::chain_apis::read_only::get_table_rows_result>();
+               if ( !res.rows.empty() ) {
+                  std::cout << std::setw(13) << std::left << "Receiver" << std::setw(21) << std::left << "Net bandwidth"
+                            << std::setw(21) << std::left << "CPU bandwidth" << std::endl;
+                  for ( auto& r : res.rows ){
+                     std::cout << std::setw(13) << std::left << r["to"].as_string()
+                               << std::setw(21) << std::left << r["net_weight"].as_string()
+                               << std::setw(21) << std::left << r["cpu_weight"].as_string()
+                               << std::endl;
+                  }
+               } else {
+                  std::cerr << "Delegated bandwidth not found" << std::endl;
+               }
+            } else {
+               std::cout << fc::json::to_pretty_string(result) << std::endl;
+            }
       });
    }
 };
@@ -1110,7 +1228,8 @@ struct regproxy_subcommand {
 
       register_proxy->set_callback([this] {
          fc::variant act_payload = fc::mutable_variant_object()
-                  ("proxy", proxy);
+                  ("proxy", proxy)
+                  ("isproxy", true);
          send_actions({create_action({permission_level{proxy,config::active_name}}, config::system_account_name, N(regproxy), act_payload)});
       });
    }
@@ -1126,30 +1245,31 @@ struct unregproxy_subcommand {
 
       unregister_proxy->set_callback([this] {
          fc::variant act_payload = fc::mutable_variant_object()
-                  ("proxy", proxy);
-         send_actions({create_action({permission_level{proxy,config::active_name}}, config::system_account_name, N(unregproxy), act_payload)});
+                  ("proxy", proxy)
+                  ("isproxy", false);
+         send_actions({create_action({permission_level{proxy,config::active_name}}, config::system_account_name, N(regproxy), act_payload)});
       });
    }
 };
 
 struct canceldelay_subcommand {
-   string cancelling_account;
-   string cancelling_permission;
+   string canceling_account;
+   string canceling_permission;
    string trx_id;
 
    canceldelay_subcommand(CLI::App* actionRoot) {
       auto cancel_delay = actionRoot->add_subcommand("canceldelay", localized("Cancel a delayed transaction"));
-      cancel_delay->add_option("cancelling_account", cancelling_account, localized("Account from authorization on the original delayed transaction"))->required();
-      cancel_delay->add_option("cancelling_permission", cancelling_permission, localized("Permission from authorization on the original delayed transaction"))->required();
+      cancel_delay->add_option("canceling_account", canceling_account, localized("Account from authorization on the original delayed transaction"))->required();
+      cancel_delay->add_option("canceling_permission", canceling_permission, localized("Permission from authorization on the original delayed transaction"))->required();
       cancel_delay->add_option("trx_id", trx_id, localized("The transaction id of the original delayed transaction"))->required();
       add_standard_transaction_options(cancel_delay);
 
       cancel_delay->set_callback([this] {
-         const auto cancelling_auth = permission_level{cancelling_account, cancelling_permission};
+         const auto canceling_auth = permission_level{canceling_account, canceling_permission};
          fc::variant act_payload = fc::mutable_variant_object()
-                  ("cancelling_auth", cancelling_auth)
+                  ("canceling_auth", canceling_auth)
                   ("trx_id", trx_id);
-         send_actions({create_action({cancelling_auth}, config::system_account_name, N(canceldelay), act_payload)});
+         send_actions({create_action({canceling_auth}, config::system_account_name, N(canceldelay), act_payload)});
       });
    }
 };
@@ -1235,7 +1355,7 @@ void get_account( const string& accountName, bool json_format ) {
 
       std::cout << "net bandwidth: (averaged over 3 days)" << std::endl;
       if ( res.total_resources.is_object() ) {
-         asset net_own( res.delegated_bandwidth.is_object() ? stoll( res.delegated_bandwidth.get_object()["net_weight"].as_string() ) : 0 );
+         asset net_own = res.delegated_bandwidth.is_object() ? asset::from_string( res.delegated_bandwidth.get_object()["net_weight"].as_string() ) : asset(0) ;
          auto net_others = to_asset(res.total_resources.get_object()["net_weight"].as_string()) - net_own;
          std::cout << indent << "staked:" << std::setw(20) << net_own
                    << std::string(11, ' ') << "(total stake delegated from account to self)" << std::endl
@@ -1281,7 +1401,7 @@ void get_account( const string& accountName, bool json_format ) {
 
 
       if ( res.total_resources.is_object() ) {
-         asset cpu_own( res.delegated_bandwidth.is_object() ? stoll( res.delegated_bandwidth.get_object()["cpu_weight"].as_string() ) : 0 );
+         asset cpu_own = res.delegated_bandwidth.is_object() ? asset::from_string( res.delegated_bandwidth.get_object()["cpu_weight"].as_string() ) : asset(0) ;
          auto cpu_others = to_asset(res.total_resources.get_object()["cpu_weight"].as_string()) - cpu_own;
          std::cout << indent << "staked:" << std::setw(20) << cpu_own
                    << std::string(11, ' ') << "(total stake delegated from account to self)" << std::endl
@@ -1685,19 +1805,27 @@ int main( int argc, char** argv ) {
    string contractPath;
    string wastPath;
    string abiPath;
+   bool shouldSend = true;
+   auto codeSubcommand = setSubcommand->add_subcommand("code", localized("Create or update the code on an account"));
+   codeSubcommand->add_option("account", account, localized("The account to set code for"))->required();
+   codeSubcommand->add_option("code-file", wastPath, localized("The fullpath containing the contract WAST or WASM"))->required();
+
+   auto abiSubcommand = setSubcommand->add_subcommand("abi", localized("Create or update the abi on an account"));
+   abiSubcommand->add_option("account", account, localized("The account to set the ABI for"))->required();
+   abiSubcommand->add_option("abi-file", abiPath, localized("The fullpath containing the contract WAST or WASM"))->required();
+
    auto contractSubcommand = setSubcommand->add_subcommand("contract", localized("Create or update the contract on an account"));
    contractSubcommand->add_option("account", account, localized("The account to publish a contract for"))
                      ->required();
-   contractSubcommand->add_option("contract-dir", contractPath, localized("The the path containing the .wast and .abi"))
+   contractSubcommand->add_option("contract-dir", contractPath, localized("The path containing the .wast and .abi"))
                      ->required();
    contractSubcommand->add_option("wast-file", wastPath, localized("The file containing the contract WAST or WASM relative to contract-dir"));
 //                     ->check(CLI::ExistingFile);
    auto abi = contractSubcommand->add_option("abi-file,-a,--abi", abiPath, localized("The ABI for the contract relative to contract-dir"));
 //                                ->check(CLI::ExistingFile);
 
-
-   add_standard_transaction_options(contractSubcommand, "account@active");
-   contractSubcommand->set_callback([&] {
+   std::vector<chain::action> actions;
+   auto set_code_callback = [&]() {
       std::string wast;
       fc::path cpath(contractPath);
 
@@ -1708,11 +1836,6 @@ int main( int argc, char** argv ) {
          wastPath = (cpath / (cpath.filename().generic_string()+".wasm")).generic_string();
          if (!fc::exists(wastPath))
             wastPath = (cpath / (cpath.filename().generic_string()+".wast")).generic_string();
-      }
-
-      if( abiPath.empty() )
-      {
-         abiPath = (cpath / (cpath.filename().generic_string()+".abi")).generic_string();
       }
 
       std::cout << localized(("Reading WAST/WASM from " + wastPath + "...").c_str()) << std::endl;
@@ -1729,25 +1852,45 @@ int main( int argc, char** argv ) {
          wasm = wast_to_wasm(wast);
       }
 
-      std::vector<chain::action> actions;
       actions.emplace_back( create_setcode(account, bytes(wasm.begin(), wasm.end()) ) );
+      if ( shouldSend ) {
+         std::cout << localized("Setting Code...") << std::endl;
+         send_actions(std::move(actions), 10000, packed_transaction::zlib);
+      }
+   };
+
+   auto set_abi_callback = [&]() {
+      fc::path cpath(contractPath);
+      if( cpath.filename().generic_string() == "." ) cpath = cpath.parent_path();
+
+      if( abiPath.empty() )
+      {
+         abiPath = (cpath / (cpath.filename().generic_string()+".abi")).generic_string();
+      }
 
       FC_ASSERT( fc::exists( abiPath ), "no abi file found ${f}", ("f", abiPath)  );
 
       try {
          actions.emplace_back( create_setabi(account, fc::json::from_file(abiPath).as<abi_def>()) );
       } EOS_RETHROW_EXCEPTIONS(abi_type_exception,  "Fail to parse ABI JSON")
+      if ( shouldSend ) {
+         std::cout << localized("Setting ABI...") << std::endl;
+         send_actions(std::move(actions), 10000, packed_transaction::zlib);
+      }
+   };
 
+   add_standard_transaction_options(contractSubcommand, "account@active");
+   add_standard_transaction_options(codeSubcommand, "account@active");
+   add_standard_transaction_options(abiSubcommand, "account@active");
+   contractSubcommand->set_callback([&] {
+      shouldSend = false;
+      set_code_callback();
+      set_abi_callback();
       std::cout << localized("Publishing contract...") << std::endl;
       send_actions(std::move(actions), 10000, packed_transaction::zlib);
-      /*
-      auto result = push_actions(std::move(actions), 10000, packed_transaction::zlib);
-
-      if( tx_dont_broadcast ) {
-         std::cout << fc::json::to_pretty_string(result) << "\n";
-      }
-      */
    });
+   codeSubcommand->set_callback(set_code_callback);
+   abiSubcommand->set_callback(set_abi_callback);
 
    // set account
    auto setAccount = setSubcommand->add_subcommand("account", localized("set or update blockchain account state"))->require_subcommand();
@@ -1874,6 +2017,7 @@ int main( int argc, char** argv ) {
    auto unlockWallet = wallet->add_subcommand("unlock", localized("Unlock wallet"), false);
    unlockWallet->add_option("-n,--name", wallet_name, localized("The name of the wallet to unlock"));
    unlockWallet->add_option("--password", wallet_pw, localized("The password returned by wallet create"));
+   unlockWallet->add_option( "--unlock-timeout", wallet_unlock_timeout, localized("The timeout for unlocked wallet in seconds"));
    unlockWallet->set_callback([&wallet_name, &wallet_pw] {
       if( wallet_pw.size() == 0 ) {
          std::cout << localized("password: ");
@@ -1992,13 +2136,13 @@ int main( int argc, char** argv ) {
    push->require_subcommand();
 
    // push action
-   string contract;
+   string contract_account;
    string action;
    string data;
    vector<string> permissions;
    auto actionsSubcommand = push->add_subcommand("action", localized("Push a transaction with a single action"));
    actionsSubcommand->fallthrough(false);
-   actionsSubcommand->add_option("contract", contract,
+   actionsSubcommand->add_option("account", contract_account,
                                  localized("The account providing the contract to execute"), true)->required();
    actionsSubcommand->add_option("action", action,
                                  localized("A JSON string or filename defining the action to execute on the contract"), true)->required();
@@ -2012,14 +2156,14 @@ int main( int argc, char** argv ) {
       } EOS_RETHROW_EXCEPTIONS(action_type_exception, "Fail to parse action JSON data='${data}'", ("data",data))
 
       auto arg= fc::mutable_variant_object
-                ("code", contract)
+                ("code", contract_account)
                 ("action", action)
                 ("args", action_args_var);
       auto result = call(json_to_bin_func, arg);
 
       auto accountPermissions = get_account_permissions(tx_permission);
 
-      send_actions({chain::action{accountPermissions, contract, action, result.get_object()["binargs"].as<bytes>()}});
+      send_actions({chain::action{accountPermissions, contract_account, action, result.get_object()["binargs"].as<bytes>()}});
    });
 
    // push transaction
@@ -2324,11 +2468,14 @@ int main( int argc, char** argv ) {
    voteProducer->require_subcommand();
    auto voteProxy = vote_producer_proxy_subcommand(voteProducer);
    auto voteProducers = vote_producers_subcommand(voteProducer);
+   auto approveProducer = approve_producer_subcommand(voteProducer);
+   auto unapproveProducer = unapprove_producer_subcommand(voteProducer);
 
    auto listProducers = list_producers_subcommand(system);
 
    auto delegateBandWidth = delegate_bandwidth_subcommand(system);
    auto undelegateBandWidth = undelegate_bandwidth_subcommand(system);
+   auto listBandWidth = list_bw_subcommand(system);
 
    auto biyram = buyram_subcommand(system);
    auto sellram = sellram_subcommand(system);

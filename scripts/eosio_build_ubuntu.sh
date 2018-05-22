@@ -39,7 +39,7 @@
 		   fi
 		;;
 		"Ubuntu")
-			if [ "${OS_MIN}" -lt 4 ]; then
+			if [ "${OS_MAJ}" -lt 16 ]; then
 				printf "\\tYou must be running Ubuntu 16.04.x or higher to install EOSIO.\\n"
 				printf "\\tExiting now.\\n"
 				exit 1
@@ -55,7 +55,7 @@
 
 	DEP_ARRAY=(clang-4.0 lldb-4.0 libclang-4.0-dev cmake make automake libbz2-dev libssl-dev \
 	libgmp3-dev autotools-dev build-essential libicu-dev python2.7-dev python3-dev \
-	autoconf libtool curl zlib1g-dev doxygen graphviz)
+        autoconf libtool curl zlib1g-dev doxygen graphviz)
 	COUNT=1
 	DISPLAY=""
 	DEP=""
@@ -410,9 +410,9 @@ mongodconf
 			printf "\\tExiting now.\\n\\n"
 			exit 1;
 		fi
-		printf "\\n\\tsecp256k1 successfully installed @ /usr/local/lib/libsecp256k1.a.\\n\\n"
+		printf "\\n\\tsecp256k1 successfully installed @ /usr/local/lib.\\n\\n"
 	else
-		printf "\\tsecp256k1 found @ /usr/local/lib/libsecp256k1.a.\\n"
+		printf "\\tsecp256k1 found @ /usr/local/lib.\\n"
 	fi
 
 	printf "\\n\\tChecking for LLVM with WASM support.\\n"

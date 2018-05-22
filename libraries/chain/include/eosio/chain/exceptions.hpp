@@ -167,6 +167,10 @@ namespace eosio { namespace chain {
                                     3050001, "account name already exists" )
       FC_DECLARE_DERIVED_EXCEPTION( invalid_action_args_exception, action_validate_exception,
                                     3050002, "Invalid Action Arguments" )
+      FC_DECLARE_DERIVED_EXCEPTION( eosio_assert_message_exception, action_validate_exception,
+                                    3050003, "eosio_assert_message assertion failure" )
+      FC_DECLARE_DERIVED_EXCEPTION( eosio_assert_code_exception, action_validate_exception,
+                                    3050004, "eosio_assert_code assertion failure" )
 
    FC_DECLARE_DERIVED_EXCEPTION( database_exception, chain_exception,
                                  3060000, "database exception" )
@@ -249,8 +253,8 @@ namespace eosio { namespace chain {
                                     3110001, "Missing Chain API Plugin" )
       FC_DECLARE_DERIVED_EXCEPTION( missing_wallet_api_plugin_exception,          missing_plugin_exception,
                                     3110002, "Missing Wallet API Plugin" )
-      FC_DECLARE_DERIVED_EXCEPTION( missing_account_history_api_plugin_exception, missing_plugin_exception,
-                                    3110003, "Missing Account History API Plugin" )
+      FC_DECLARE_DERIVED_EXCEPTION( missing_history_api_plugin_exception, missing_plugin_exception,
+                                    3110003, "Missing History API Plugin" )
       FC_DECLARE_DERIVED_EXCEPTION( missing_net_api_plugin_exception,             missing_plugin_exception,
                                     3110004, "Missing Net API Plugin" )
 

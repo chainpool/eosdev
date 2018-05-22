@@ -174,8 +174,24 @@ void apply_eosio_setcode(apply_context& context) {
    const auto& account = db.get<account_object,by_name>(act.account);
 
    int64_t code_size = (int64_t)act.code.size();
-   int64_t old_size = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
-   int64_t new_size = code_size * config::setcode_ram_bytes_multiplier;
+   int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
+   int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
+
+   // Only allow eosio contract to setcode
+   if (act.account != eosio::chain::name{N(eosio)}) {
+     // exit
+     FC_THROW("only allow eosio to setcode");
+   }
+
+   // Not first time setcode
+   if (account.code_version != fc::sha256::sha256()) {
+     // get allow_setcode from system contract table
+     if (!allow_setcode(context, code_id.str())) {
+       // exit
+       FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
+     }
+     // FC_THROW("setcode twice is not allowed");
+   }
 
    // Only allow eosio contract to setcode
    if (act.account != eosio::chain::name{N(eosio)}) {
@@ -198,11 +214,17 @@ void apply_eosio_setcode(apply_context& context) {
    db.modify( account, [&]( auto& a ) {
       /** TODO: consider whether a microsecond level local timestamp is sufficient to detect code version changes*/
       #warning TODO: update setcode message to include the hash, then validate it in validate
+      a.last_code_update = context.control.pending_block_time();
       a.code_version = code_id;
       a.code.resize( code_size );
-      a.last_code_update = context.control.pending_block_time();
-      memcpy( a.code.data(), act.code.data(), code_size );
+      if( code_size > 0 )
+         memcpy( a.code.data(), act.code.data(), code_size );
 
+   });
+
+   const auto& account_sequence = db.get<account_sequence_object, by_name>(act.account);
+   db.modify( account_sequence, [&]( auto& aso ) {
+      aso.code_sequence += 1;
    });
 
    if (new_size != old_size) {
@@ -211,7 +233,7 @@ void apply_eosio_setcode(apply_context& context) {
 }
 
 void apply_eosio_setabi(apply_context& context) {
-   auto& db = context.db;
+   auto& db  = context.db;
    auto  act = context.act.data_as<setabi>();
 
    context.setcode_require_authorization(act.account);
@@ -222,23 +244,22 @@ void apply_eosio_setabi(apply_context& context) {
      FC_THROW("only allow eosio to setabi");
    }
 
-   // if system account append native abi
-   if ( act.account == eosio::chain::config::system_account_name ) {
-      act.abi = eosio_contract_abi(act.abi);
-   }
-   /// if an ABI is specified make sure it is well formed and doesn't
-   /// reference any undefined types
-   abi_serializer(act.abi).validate();
-   // todo: figure out abi serialization location
-
    const auto& account = db.get<account_object,by_name>(act.account);
 
-   int64_t old_size = (int64_t)account.abi.size();
-   int64_t new_size = (int64_t)fc::raw::pack_size(act.abi);
+   int64_t abi_size = act.abi.size();
 
+   int64_t old_size = (int64_t)account.abi.size();
+   int64_t new_size = abi_size;
 
    db.modify( account, [&]( auto& a ) {
-      a.set_abi( act.abi );
+      a.abi.resize( abi_size );
+      if( abi_size > 0 )
+         memcpy( a.abi.data(), act.abi.data(), abi_size );
+   });
+
+   const auto& account_sequence = db.get<account_sequence_object, by_name>(act.account);
+   db.modify( account_sequence, [&]( auto& aso ) {
+      aso.abi_sequence += 1;
    });
 
    if (new_size != old_size) {
@@ -406,16 +427,6 @@ void apply_eosio_unlinkauth(apply_context& context) {
 
    db.remove(*link);
 }
-
-static const abi_serializer& get_abi_serializer() {
-   static optional<abi_serializer> _abi_serializer;
-   if (!_abi_serializer) {
-      _abi_serializer.emplace(eosio_contract_abi(abi_def()));
-   }
-
-   return *_abi_serializer;
-}
-
 
 void apply_eosio_canceldelay(apply_context& context) {
    auto cancel = context.act.data_as<canceldelay>();

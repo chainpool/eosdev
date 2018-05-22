@@ -402,6 +402,77 @@ fc::variant read_only::get_currency_stats( const read_only::get_currency_stats_p
    return results;
 }
 
+// TODO: move this and similar functions to a header. Copied from wasm_interface.cpp.
+// TODO: fix strict aliasing violation
+static float64_t to_softfloat64( double d ) {
+   return *reinterpret_cast<float64_t*>(&d);
+}
+
+static fc::variant get_global_row( const database& db, const abi_def& abi, const abi_serializer& abis ) {
+   const auto table_type = get_table_type(abi, N(global));
+   EOS_ASSERT(table_type == read_only::KEYi64, chain::contract_table_query_exception, "Invalid table type ${type} for table global", ("type",table_type));
+
+   const auto* const table_id = db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(global)));
+   EOS_ASSERT(table_id, chain::contract_table_query_exception, "Missing table global");
+
+   const auto& kv_index = db.get_index<key_value_index, by_scope_primary>();
+   const auto it = kv_index.find(boost::make_tuple(table_id->id, N(global)));
+   EOS_ASSERT(it != kv_index.end(), chain::contract_table_query_exception, "Missing row in table global");
+
+   vector<char> data;
+   read_only::copy_inline_row(*it, data);
+   return abis.binary_to_variant(abis.get_table_type(N(global)), data);
+}
+
+read_only::get_producers_result read_only::get_producers( const read_only::get_producers_params& p ) const {
+   const abi_def abi = get_abi(db, N(eosio));
+   const auto table_type = get_table_type(abi, N(producers));
+   const abi_serializer abis{ abi };
+   EOS_ASSERT(table_type == KEYi64, chain::contract_table_query_exception, "Invalid table type ${type} for table producers", ("type",table_type));
+
+   const auto& d = db.db();
+   const auto lower = name{p.lower_bound};
+
+   static const uint8_t secondary_index_num = 0;
+   const auto* const table_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(producers)));
+   const auto* const secondary_table_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(producers) | secondary_index_num));
+   EOS_ASSERT(table_id && secondary_table_id, chain::contract_table_query_exception, "Missing producers table");
+
+   const auto& kv_index = d.get_index<key_value_index, by_scope_primary>();
+   const auto& secondary_index = d.get_index<index_double_index>().indices();
+   const auto& secondary_index_by_primary = secondary_index.get<by_primary>();
+   const auto& secondary_index_by_secondary = secondary_index.get<by_secondary>();
+
+   read_only::get_producers_result result;
+   const auto stopTime = fc::time_point::now() + fc::microseconds(1000 * 10); // 10ms
+   vector<char> data;
+
+   auto it = [&]{
+      if(lower.value == 0)
+         return secondary_index_by_secondary.lower_bound(
+            boost::make_tuple(secondary_table_id->id, to_softfloat64(std::numeric_limits<double>::lowest()), 0));
+      else
+         return secondary_index.project<by_secondary>(
+            secondary_index_by_primary.lower_bound(
+               boost::make_tuple(secondary_table_id->id, lower.value)));
+   }();
+
+   for( ; it != secondary_index_by_secondary.end() && it->t_id == secondary_table_id->id; ++it ) {
+      if (result.rows.size() >= p.limit || fc::time_point::now() > stopTime) {
+         result.more = name{it->primary_key}.to_string();
+         break;
+      }
+      copy_inline_row(*kv_index.find(boost::make_tuple(table_id->id, it->primary_key)), data);
+      if (p.json)
+         result.rows.emplace_back(abis.binary_to_variant(abis.get_table_type(N(producers)), data));
+      else
+         result.rows.emplace_back(fc::variant(data));
+   }
+
+   result.total_producer_vote_weight = get_global_row(d, abi, abis)["total_producer_vote_weight"].as_double();
+   return result;
+}
+
 template<typename Api>
 struct resolver_factory {
    static auto make(const Api *api) {
@@ -508,6 +579,7 @@ read_only::get_account_results read_only::get_account( const get_account_params&
 
    const auto& d = db.db();
    const auto& rm = db.get_resource_limits_manager();
+
    rm.get_account_limits( result.account_name, result.ram_quota, result.net_weight, result.cpu_weight );
 
    const auto& a = db.get_account(result.account_name);
@@ -548,7 +620,7 @@ read_only::get_account_results read_only::get_account( const get_account_params&
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( config::system_account_name, params.account_name, N(userres) ));
       if (t_id != nullptr) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.lower_bound(boost::make_tuple( t_id->id, params.account_name ));
+         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
          if ( it != idx.end() ) {
             vector<char> data;
             copy_inline_row(*it, data);
@@ -559,7 +631,7 @@ read_only::get_account_results read_only::get_account( const get_account_params&
       t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( config::system_account_name, params.account_name, N(delband) ));
       if (t_id != nullptr) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.lower_bound(boost::make_tuple( t_id->id, params.account_name ));
+         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
          if ( it != idx.end() ) {
             vector<char> data;
             copy_inline_row(*it, data);
@@ -570,7 +642,7 @@ read_only::get_account_results read_only::get_account( const get_account_params&
       t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( config::system_account_name, config::system_account_name, N(voters) ));
       if (t_id != nullptr) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.lower_bound(boost::make_tuple( t_id->id, params.account_name ));
+         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
          if ( it != idx.end() ) {
             vector<char> data;
             copy_inline_row(*it, data);
@@ -581,6 +653,14 @@ read_only::get_account_results read_only::get_account( const get_account_params&
    return result;
 }
 
+static variant action_abi_to_variant( const abi_def& abi, type_name action_type ) {
+   variant v;
+   auto it = std::find_if(abi.structs.begin(), abi.structs.end(), [&](auto& x){return x.name == action_type;});
+   if( it != abi.structs.end() )
+      to_variant( it->fields,  v );
+   return v;
+};
+
 read_only::abi_json_to_bin_result read_only::abi_json_to_bin( const read_only::abi_json_to_bin_params& params )const try {
    abi_json_to_bin_result result;
    const auto code_account = db.db().find<account_object,by_name>( params.code );
@@ -589,11 +669,13 @@ read_only::abi_json_to_bin_result read_only::abi_json_to_bin( const read_only::a
    abi_def abi;
    if( abi_serializer::to_abi(code_account->abi, abi) ) {
       abi_serializer abis( abi );
+      auto action_type = abis.get_action_type(params.action);
+      EOS_ASSERT(!action_type.empty(), action_validate_exception, "Unknown action ${action} in contract ${contract}", ("action", params.action)("contract", params.code));
       try {
-         result.binargs = abis.variant_to_binary(abis.get_action_type(params.action), params.args);
+         result.binargs = abis.variant_to_binary(action_type, params.args);
       } EOS_RETHROW_EXCEPTIONS(chain::invalid_action_args_exception,
-                                "'${args}' is invalid args for action '${action}' code '${code}'",
-                                ("args", params.args)("action", params.action)("code", params.code))
+                                "'${args}' is invalid args for action '${action}' code '${code}'. expected '${proto}'",
+                                ("args", params.args)("action", params.action)("code", params.code)("proto", action_abi_to_variant(abi, action_type)))
    }
    return result;
 } FC_CAPTURE_AND_RETHROW( (params.code)(params.action)(params.args) )

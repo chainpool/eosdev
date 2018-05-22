@@ -55,10 +55,14 @@ action_trace apply_context::exec_one()
    } FC_CAPTURE_AND_RETHROW((_pending_console_output.str()));
 
    action_receipt r;
-   r.receiver        = receiver;
-   r.act_digest      = digest_type::hash(act);
-   r.global_sequence = next_global_sequence();
-   r.recv_sequence   = next_recv_sequence( receiver );
+   r.receiver         = receiver;
+   r.act_digest       = digest_type::hash(act);
+   r.global_sequence  = next_global_sequence();
+   r.recv_sequence    = next_recv_sequence( receiver );
+
+   const auto& account_sequence = db.get<account_sequence_object, by_name>(act.account);
+   r.code_sequence    = account_sequence.code_sequence;
+   r.abi_sequence     = account_sequence.abi_sequence;
 
    for( const auto& auth : act.authorization ) {
       r.auth_sequence[auth.actor] = next_auth_sequence( auth.actor );
@@ -210,7 +214,7 @@ void apply_context::execute_inline( action&& a ) {
                                       {},
                                       {{receiver, config::eosio_code_name}},
                                       control.pending_block_time() - trx_context.published,
-                                      std::bind(&apply_context::checktime, this, std::placeholders::_1),
+                                      std::bind(&transaction_context::checktime, &this->trx_context),
                                       false
                                     );
 
@@ -269,7 +273,7 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
                                       {},
                                       {{receiver, config::eosio_code_name}},
                                       delay,
-                                      std::bind(&apply_context::checktime, this, std::placeholders::_1),
+                                      std::bind(&transaction_context::checktime, &this->trx_context),
                                       false
                                     );
       }
@@ -304,19 +308,18 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
    }
 
    trx_context.add_ram_usage( payer, (config::billable_size_v<generated_transaction_object> + trx_size) );
-   checktime( trx_size * 4 ); /// 4 instructions per byte of packed generated trx (estimated)
+   trx_context.checktime();
 }
 
-void apply_context::cancel_deferred_transaction( const uint128_t& sender_id, account_name sender ) {
+bool apply_context::cancel_deferred_transaction( const uint128_t& sender_id, account_name sender ) {
    auto& generated_transaction_idx = db.get_mutable_index<generated_transaction_multi_index>();
    const auto* gto = db.find<generated_transaction_object,by_sender_id>(boost::make_tuple(sender, sender_id));
-   EOS_ASSERT( gto != nullptr, transaction_exception,
-               "there is no generated transaction created by account ${sender} with sender id ${sender_id}",
-               ("sender", sender)("sender_id", sender_id) );
-
-   trx_context.add_ram_usage( gto->payer, -(config::billable_size_v<generated_transaction_object> + gto->packed_trx.size()) );
-   generated_transaction_idx.remove(*gto);
-   checktime( 100 );
+   if ( gto ) {
+      trx_context.add_ram_usage( gto->payer, -(config::billable_size_v<generated_transaction_object> + gto->packed_trx.size()) );
+      generated_transaction_idx.remove(*gto);
+   }
+   trx_context.checktime();
+   return gto;
 }
 
 const table_id_object* apply_context::find_table( name code, name scope, name table ) {
@@ -359,13 +362,9 @@ void apply_context::reset_console() {
    _pending_console_output.setf( std::ios::scientific, std::ios::floatfield );
 }
 
-void apply_context::checktime(uint32_t instruction_count) {
-   trx_context.check_time();
-}
-
 bytes apply_context::get_packed_transaction() {
    auto r = fc::raw::pack( static_cast<const transaction&>(trx_context.trx) );
-   checktime( r.size() );
+   trx_context.checktime();
    return r;
 }
 
@@ -614,7 +613,6 @@ int apply_context::db_end_i64( uint64_t code, uint64_t scope, uint64_t table ) {
 
    return keyval_cache.cache_table( *tab );
 }
-
 
 uint64_t apply_context::next_global_sequence() {
    const auto& p = control.get_dynamic_global_properties();

@@ -5,11 +5,14 @@
 #include <eosio/chain/asset.hpp>
 #include <eosio/chain/exceptions.hpp>
 #include <boost/rational.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <fc/reflect/variant.hpp>
 
 namespace eosio { namespace chain {
-typedef boost::multiprecision::int128_t  int128_t;
+
+asset::asset(share_type a, symbol id) :amount(a), sym(id) {
+   EOS_ASSERT( is_amount_within_range(), asset_type_exception, "magnitude of asset amount must be less than 2^62" );
+   EOS_ASSERT( sym.valid(), asset_type_exception, "invalid symbol" );
+}
 
 asset::asset(share_type a, symbol id) :amount(a), sym(id) {
    EOS_ASSERT( is_amount_within_range(), asset_type_exception, "magnitude of asset amount must be less than 2^62" );
@@ -29,13 +32,15 @@ int64_t asset::precision()const {
 }
 
 string asset::to_string()const {
-   string result = fc::to_string( static_cast<int64_t>(amount) / precision());
+   string sign = amount < 0 ? "-" : "";
+   int64_t abs_amount = std::abs(amount);
+   string result = fc::to_string( static_cast<int64_t>(abs_amount) / precision());
    if( decimals() )
    {
-      auto fract = static_cast<int64_t>(amount) % precision();
+      auto fract = static_cast<int64_t>(abs_amount) % precision();
       result += "." + fc::to_string(precision() + fract).erase(0,1);
    }
-   return result + " " + symbol_name();
+   return sign + result + " " + symbol_name();
 }
 
 asset asset::from_string(const string& from)
