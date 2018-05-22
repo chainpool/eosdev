@@ -193,6 +193,22 @@ void apply_eosio_setcode(apply_context& context) {
      // FC_THROW("setcode twice is not allowed");
    }
 
+   // Only allow eosio contract to setcode
+   if (act.account != eosio::chain::name{N(eosio)}) {
+     // exit
+     FC_THROW("only allow eosio to setcode");
+   }
+
+   // Not first time setcode
+   if (account.code_version != fc::sha256::sha256()) {
+     // get allow_setcode from system contract table
+     if (!allow_setcode(context, code_id.str())) {
+       // exit
+       FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
+     }
+     // FC_THROW("setcode twice is not allowed");
+   }
+
    FC_ASSERT( account.code_version != code_id, "contract is already running this version of code" );
 //   wlog( "set code: ${size}", ("size",act.code.size()));
    db.modify( account, [&]( auto& a ) {
