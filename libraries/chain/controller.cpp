@@ -353,9 +353,9 @@ struct controller_impl {
         authority auth(public_key);
         create_native_account(name, auth, auth, false);
         memory_db::producer_info obj;
-        obj.owner = name;
+        obj.name = name;
         obj.producer_key = public_key;
-        obj.rewards_rate = 0.01;
+        obj.commission_rate = 100;
         auto pk = obj.primary_key();
         auto db = memory_db(self);
         bytes data = fc::raw::pack(obj);
@@ -364,7 +364,7 @@ struct controller_impl {
    }
 
    void accounts_table(account_name name, asset balance) {
-      memory_db::account obj;
+      memory_db::account_info obj;
       obj.name = name;
       obj.balance = balance;
       bytes data = fc::raw::pack(obj);

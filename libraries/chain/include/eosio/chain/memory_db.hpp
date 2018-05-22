@@ -36,36 +36,28 @@ class memory_db {
    /// Fields:
    public:
       chainbase::database&          db;  ///< database where state is stored
-      struct account {
-         account_name name;
-         asset    balance;
-         asset    lock_balance;
+      struct account_info {
+         account_name     name;
+         asset            balance;
+
          uint64_t primary_key()const { return name; }
       };
 
-      /*struct public_key {
-        char data[34];
-      };*/
-
       struct producer_info {
-         account_name owner;
-         uint64_t total_votes = 0;
-         public_key_type producer_key;
-         uint32_t last_produced_time = 0;
-         uint32_t produced_blocks;
-         asset rewards_pool = asset(0);
-         uint32_t last_dividend;
-         asset settlement_balance;
-         double rewards_rate;
+         account_name      name;
+         asset             total_votes;
+         public_key_type   producer_key;
+         asset             rewards_pool;
+         uint32_t          commission_rate;
+         int64_t           total_votes_age;
+         uint32_t          update_votes_age;
 
-         uint64_t primary_key() const { return owner; }
-         uint64_t by_votes() const { return total_votes; }
-         //TODO:check producer_key
-         bool active() const { return 34 == sizeof(producer_key); }
+         uint64_t primary_key() const { return name; }
       };
 };
 } } // namespace eosio::chain
 
-FC_REFLECT(eosio::chain::memory_db::account, (name)(balance)(lock_balance) )
-FC_REFLECT(eosio::chain::memory_db::producer_info, (owner)(total_votes)(producer_key)(last_produced_time)(produced_blocks)(rewards_pool)(last_dividend)(settlement_balance)(rewards_rate))
+FC_REFLECT(eosio::chain::memory_db::account_info, (name)(balance))
+FC_REFLECT(eosio::chain::memory_db::producer_info, (name)(total_votes)
+  (producer_key)(rewards_pool)(commission_rate)(total_votes_age)(update_votes_age))
 
