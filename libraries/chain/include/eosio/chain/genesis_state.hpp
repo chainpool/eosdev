@@ -72,4 +72,4 @@ struct genesis_state {
 
 
 FC_REFLECT(eosio::chain::genesis_state,
-           (initial_timestamp)(initial_key)(initial_configuration)(initial_chain_id)(initial_account_map)(initial_producer_map))
+           (initial_timestamp)(initial_key)(initial_configuration)(initial_account_map)(initial_producer_map))

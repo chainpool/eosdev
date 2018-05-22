@@ -192,7 +192,11 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
    my->chain_config->shared_memory_dir = app().data_dir() / default_shared_memory_dir;
    my->chain_config->read_only = my->readonly;
    my->chain_config->shared_memory_size = my->shared_memory_size;
-   my->chain_config->genesis = fc::json::from_file(my->genesis_file).as<genesis_state>();
+   auto genesis_v = fc::json::from_file(my->genesis_file);
+   my->chain_config->genesis = genesis_v.as<genesis_state>();
+   auto genesis_s = fc::json::to_string(genesis_v);
+   my->chain_config->genesis.initial_chain_id = fc::sha256::hash(genesis_s);
+   ilog("----- initial_chain_id: ${id}", ("id", my->chain_config->genesis.initial_chain_id) );
    if (my->genesis_timestamp.sec_since_epoch() > 0) {
       my->chain_config->genesis.initial_timestamp = my->genesis_timestamp;
    }
