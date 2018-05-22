@@ -17,6 +17,7 @@ with amount = 10 and symbol(4,"CUR")
 
 */
 
+#define EOS_SYMBOL symbol(4, "EOS")
 struct asset
 {
    static constexpr int64_t max_amount = (1LL << 62) - 1;
