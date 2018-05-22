@@ -317,6 +317,9 @@ struct controller_impl {
    }
 
    void create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged = false ) {
+      if (db.find<account_object, by_name>(name) != nullptr) {
+        return;
+      }
       db.create<account_object>([&](auto& a) {
          a.name = name;
          a.creation_date = conf.genesis.initial_timestamp;
