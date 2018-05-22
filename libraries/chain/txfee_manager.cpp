@@ -13,11 +13,11 @@ namespace eosio { namespace chain {
         fee_map[N(setcode)] = asset(1000);
         fee_map[N(setabi)] = asset(1000);
         fee_map[N(transfer)] = asset(1000);
-        fee_map[N(regproducer)] = asset(1000);
-        fee_map[N(unregprod)] = asset(1000);
-        fee_map[N(votegproducer)] = asset(1000);
-        fee_map[N(setprods)] = asset(1000);
-        fee_map[N(unsetprods)] = asset(1000);
+        fee_map[N(updateprod)] = asset(1000);
+        fee_map[N(addvote)] = asset(1000);
+        fee_map[N(minusvote)] = asset(1000);
+        fee_map[N(unfreeze)] = asset(1000);
+        fee_map[N(claim)] = asset(1000);
         fee_map[N(createp)] = asset(1000);
         fee_map[N(proproposal)] = asset(1000);
         fee_map[N(conproposal)] = asset(1000);
