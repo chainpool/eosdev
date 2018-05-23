@@ -355,21 +355,21 @@ struct controller_impl {
         auto public_key = producer.second;
         authority auth(public_key);
         create_native_account(name, auth, auth, false);
-        memory_db::producer_info obj;
+        memory_db::bp_info obj;
         obj.name = name;
         obj.producer_key = public_key;
         obj.commission_rate = 100;
         auto pk = obj.primary_key();
         auto db = memory_db(self);
         bytes data = fc::raw::pack(obj);
-        db.db_store_i64(N(eosio), N(eosio), N(producers), N(name), pk, data.data(), data.size() );
+        db.db_store_i64(N(eosio), N(eosio), N(bps), N(name), pk, data.data(), data.size() );
       }
    }
 
    void accounts_table(account_name name, asset balance) {
       memory_db::account_info obj;
       obj.name = name;
-      obj.balance = balance;
+      obj.available = balance;
       bytes data = fc::raw::pack(obj);
       auto pk = obj.primary_key();
       auto db = memory_db(self);
