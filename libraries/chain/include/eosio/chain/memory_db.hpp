@@ -38,26 +38,26 @@ class memory_db {
       chainbase::database&          db;  ///< database where state is stored
       struct account_info {
          account_name     name;
-         asset            balance;
+         asset            available;
 
          uint64_t primary_key()const { return name; }
       };
 
-      struct producer_info {
-         account_name      name;
-         asset             total_votes;
-         public_key_type   producer_key;
-         asset             rewards_pool;
-         uint32_t          commission_rate;
-         int64_t           total_votes_age;
-         uint32_t          update_votes_age;
+      struct bp_info {
+         account_name     name;
+         public_key_type  producer_key;
+         uint32_t         commission_rate;
+         asset            total_staked;
+         asset            rewards_pool;
+         int64_t          total_voteage;
+         uint32_t         voteage_update_time;
 
          uint64_t primary_key() const { return name; }
       };
 };
 } } // namespace eosio::chain
 
-FC_REFLECT(eosio::chain::memory_db::account_info, (name)(balance))
-FC_REFLECT(eosio::chain::memory_db::producer_info, (name)(total_votes)
-  (producer_key)(rewards_pool)(commission_rate)(total_votes_age)(update_votes_age))
+FC_REFLECT(eosio::chain::memory_db::account_info, (name)(available))
+FC_REFLECT(eosio::chain::memory_db::bp_info, (name)(producer_key)
+  (commission_rate)(total_staked)(rewards_pool)(total_voteage)(voteage_update_time))
 
