@@ -182,7 +182,7 @@ class producer_plugin_impl {
 
       void on_incoming_block(const signed_block_ptr& block) {
 
-         int _time_for_future_block = _max_transaction_time_ms*2/1000;//double transaction time
+         int _time_for_future_block = config::block_interval_ms*2/1000;//double transaction time
          FC_ASSERT( block->timestamp < (fc::time_point::now() + fc::seconds(_time_for_future_block)), "received a block from the future, ignoring it" );
 
 
