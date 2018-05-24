@@ -50,7 +50,7 @@ class memory_db {
          asset            total_staked;
          asset            rewards_pool;
          int64_t          total_voteage;
-         uint32_t         voteage_update_time;
+         time_point_sec   voteage_update_time;
 
          uint64_t primary_key() const { return name; }
       };
