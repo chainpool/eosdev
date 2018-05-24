@@ -253,10 +253,10 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       genesis_state default_genesis;
       fc::json::save_to_file( default_genesis, my->genesis_file, true );
    }
-   my->chain_config->block_log_dir = my->block_log_dir;
-   my->chain_config->shared_memory_dir = app().data_dir() / default_shared_memory_dir;
+   my->chain_config->blocks_dir = my->blocks_dir;
+   my->chain_config->state_dir = app().data_dir() / default_state_dir_name;
    my->chain_config->read_only = my->readonly;
-   my->chain_config->shared_memory_size = my->shared_memory_size;
+  //  my->chain_config->state_size = my->state_size;
    auto genesis_v = fc::json::from_file(my->genesis_file);
    my->chain_config->genesis = genesis_v.as<genesis_state>();
    auto genesis_s = fc::json::to_string(genesis_v);
