@@ -686,6 +686,29 @@ struct controller_impl {
       return r;
    }
 
+    void check_action_size(vector<action>& actions)
+    {
+        for (int i = 0; i < actions.size(); i++)
+        {
+            action _a = actions.at(i) ;
+
+            if( "transfer" == _a.name.to_string() )
+            {
+                //printf("this is a transfer action. \n");
+                //FC_ASSERT(_a.data.size() < 200, "action bytes too large!");//the number of action bytes should not be greater than 200 char.
+
+                FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
+                auto _v = fc::raw::unpack<tmp_transfer >(_a.data);
+                ilog("transfer memo is : ${mem}", ("mem", _v.memo));
+                FC_ASSERT(_v.memo.length() < 257, "action bytes too large!");
+            }
+        }
+
+     }
+
+
+
+
    /**
     *  This is the entry point for new transactions to the block state. It will check authorization and
     *  determine whether to execute it now or to delay it. Lastly it inserts a transaction receipt into
@@ -697,7 +720,7 @@ struct controller_impl {
                                            uint32_t billed_cpu_time_us  )
    {
       FC_ASSERT(deadline != fc::time_point(), "deadline cannot be uninitialized");
-
+      check_action_size(trx->trx.actions);
       transaction_trace_ptr trace;
       try {
          transaction_context trx_context(self, trx->trx, trx->id);
