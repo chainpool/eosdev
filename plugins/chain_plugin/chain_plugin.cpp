@@ -672,20 +672,17 @@ read_write::push_block_results read_write::push_block(const read_write::push_blo
 }
 
 read_write::push_transaction_results read_write::push_transaction(const read_write::push_transaction_params& params) {
-  elog("*************** push_transaction");
    chain::transaction_id_type id;
    fc::variant pretty_output;
    try {
       auto pretty_input = std::make_shared<packed_transaction>();
       auto resolver = make_resolver(this);
       try {
-        elog("*************** from_variant");
          abi_serializer::from_variant(params, *pretty_input, resolver);
       } EOS_RETHROW_EXCEPTIONS(chain::packed_transaction_type_exception, "Invalid packed transaction")
 
       auto trx_trace_ptr = app().get_method<incoming::methods::transaction_sync>()(pretty_input, true);
 
-      elog("*************** from_variant_with_abi");
       pretty_output = db.to_variant_with_abi( *trx_trace_ptr );;
       //abi_serializer::to_variant(*trx_trace_ptr, pretty_output, resolver);
       id = trx_trace_ptr->id;

@@ -5,6 +5,8 @@
 #include <eosio/faucet_testnet_plugin/faucet_testnet_plugin.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
 #include <eosio/utilities/key_conversion.hpp>
+#include <eosio/chain/plugin_interface.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>
@@ -51,6 +53,7 @@ namespace eosio {
 static appbase::abstract_plugin& _faucet_testnet_plugin = app().register_plugin<faucet_testnet_plugin>();
 
 using namespace eosio::chain;
+using namespace eosio::chain::plugin_interface;
 using public_key_type = chain::public_key_type;
 using key_pair = std::pair<std::string, std::string>;
 using results_pair = std::pair<uint32_t,fc::variant>;
@@ -215,8 +218,7 @@ struct faucet_testnet_plugin_impl {
       chain::chain_id_type chainid;
       auto& plugin = _app.get_plugin<chain_plugin>();
       plugin.get_chain_id(chainid);
-      controller& cc = plugin.chain();
-      chain::controller& chain = app().get_plugin<chain_plugin>().chain();
+      const controller& cc = plugin.chain();
 
       signed_transaction trx;
       auto memo = fc::variant(fc::time_point::now()).as_string() + " " + fc::variant(fc::time_point::now().time_since_epoch()).as_string();
@@ -231,12 +233,18 @@ struct faucet_testnet_plugin_impl {
 
       trx.expiration = cc.head_block_time() + fc::seconds(30);
       trx.set_reference_block(cc.head_block_id());
+
+      auto trx_ = (transaction)trx;
+      auto txm = txfee_manager();
+      auto required_fee = txm.get_required_fee(trx_);
+      trx.fee = required_fee;
+
       trx.sign(_create_account_private_key, chainid);
 
+      auto packed_trx = packed_transaction(trx);
       try {
-         chain.push_transaction( std::make_shared<transaction_metadata>(trx), trx.expiration );
-         elog("--------------------- push_transaction -----------");
-         cc.push_transaction( std::make_shared<transaction_metadata>(trx), trx.expiration );
+         // cc.push_transaction( std::make_shared<transaction_metadata>(trx), trx.expiration );
+         auto trx_trace_ptr = app().get_method<incoming::methods::transaction_sync>()(std::make_shared<packed_transaction>(packed_trx), true);
       } catch (const account_name_exists_exception& ) {
          // another transaction ended up adding the account, so look for alternates
          return find_alternates(new_account_name);
