@@ -216,6 +216,7 @@ struct faucet_testnet_plugin_impl {
       auto& plugin = _app.get_plugin<chain_plugin>();
       plugin.get_chain_id(chainid);
       controller& cc = plugin.chain();
+      chain::controller& chain = app().get_plugin<chain_plugin>().chain();
 
       signed_transaction trx;
       auto memo = fc::variant(fc::time_point::now()).as_string() + " " + fc::variant(fc::time_point::now().time_since_epoch()).as_string();
@@ -233,7 +234,9 @@ struct faucet_testnet_plugin_impl {
       trx.sign(_create_account_private_key, chainid);
 
       try {
-         cc.push_transaction( std::make_shared<transaction_metadata>(trx) );
+         chain.push_transaction( std::make_shared<transaction_metadata>(trx), trx.expiration );
+         elog("--------------------- push_transaction -----------");
+         cc.push_transaction( std::make_shared<transaction_metadata>(trx), trx.expiration );
       } catch (const account_name_exists_exception& ) {
          // another transaction ended up adding the account, so look for alternates
          return find_alternates(new_account_name);
