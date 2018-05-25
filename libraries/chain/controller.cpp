@@ -369,6 +369,7 @@ struct controller_impl {
         obj.name = name;
         obj.producer_key = public_key;
         obj.commission_rate = 100;
+        obj.voteage_update_time = fc::time_point_sec(fc::time_point::now());
         auto pk = obj.primary_key();
         auto db = memory_db(self);
         bytes data = fc::raw::pack(obj);
@@ -445,6 +446,7 @@ struct controller_impl {
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       initialize_account();
       initialize_producer();
+      accounts_table(N(eosio), asset(100000));
 
       auto empty_authority = authority(1, {}, {});
       auto active_producers_authority = authority(1, {}, {});
