@@ -287,46 +287,105 @@ public:
          }
       }
 
+//Convert the table_key string to the uint64_t.
+      uint64_t t_key = 0;
+      try {
+         name k(p.table_key);
+         t_key = k.value;
+      } catch( ... ) {
+         try {
+            auto trimmed_key_str = p.table_key;
+            boost::trim(trimmed_key_str);
+            t_key = boost::lexical_cast<uint64_t>(trimmed_key_str.c_str(), trimmed_key_str.size());
+         } catch( ... ) {
+            try {
+               auto symb = eosio::chain::symbol::from_string(p.table_key);
+               t_key = symb.value();
+            } catch( ... ) {
+               try {
+                  t_key = ( eosio::chain::string_to_symbol( 0, p.table_key.c_str() ) >> 8 );
+               } catch( ... ) {
+                  FC_ASSERT( false, "could not convert table_key string to any of the following: uint64_t, valid name, or valid symbol (with or without the precision)" );
+               }
+            }
+         }
+      }
+
+
       abi_serializer abis;
       abis.set_abi(abi);
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
-      if (t_id != nullptr) {
-         const auto &idx = d.get_index<IndexType, Scope>();
-         decltype(t_id->id) next_tid(t_id->id._id + 1);
-         auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
-         auto upper = idx.lower_bound(boost::make_tuple(next_tid));
+//Return only rows that contain key.
+      if((!p.table_key.empty())&&(t_id != nullptr))
+      {
+          vector<char> data;
+          const auto& idx = d.get_index<chain::key_value_index, chain::by_scope_primary>();
+          decltype(t_id->id) next_tid(t_id->id._id + 1);
+          auto lower = idx.lower_bound( boost::make_tuple( t_id->id,t_key));
+          auto upper = idx.lower_bound(boost::make_tuple(next_tid,t_key));
+          if ( lower == idx.end() || lower->t_id != t_id->id || t_key != lower->primary_key ){
+             return result;
+          }
+          auto end = fc::time_point::now() + fc::microseconds(1000 * 10); /// 10ms max time
 
-         if (p.lower_bound.size()) {
-            lower = idx.lower_bound(boost::make_tuple(t_id->id, fc::variant(
-               p.lower_bound).as<typename IndexType::value_type::key_type>()));
-         }
-         if (p.upper_bound.size()) {
-            upper = idx.lower_bound(boost::make_tuple(t_id->id, fc::variant(
-               p.upper_bound).as<typename IndexType::value_type::key_type>()));
-         }
+          unsigned int count = 0;
+          auto itr = lower;
+          for (itr=lower; itr != upper; ++itr){
+             if(t_key == itr->primary_key){
+                 copy_inline_row(*itr, data);
+                 if (p.json){
+                    result.rows.emplace_back(abis.binary_to_variant(abis.get_table_type(p.table), data));
+                 }
+                 else{
+                    result.rows.emplace_back(fc::variant(data));
+                 }
 
-         vector<char> data;
+                 if (++count == p.limit || fc::time_point::now() > end){
+                    break;
+                 }
+             }
+          }
+          if (itr != upper){
+             result.more = true;
+          }
+       }
+      else if (t_id != nullptr){
+             const auto &idx = d.get_index<IndexType, Scope>();
+             decltype(t_id->id) next_tid(t_id->id._id + 1);
+             auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
+             auto upper = idx.lower_bound(boost::make_tuple(next_tid));
 
-         auto end = fc::time_point::now() + fc::microseconds(1000 * 10); /// 10ms max time
+             if (p.lower_bound.size()) {
+                lower = idx.lower_bound(boost::make_tuple(t_id->id, fc::variant(
+                   p.lower_bound).as<typename IndexType::value_type::key_type>()));
+             }
+             if (p.upper_bound.size()) {
+                upper = idx.lower_bound(boost::make_tuple(t_id->id, fc::variant(
+                   p.upper_bound).as<typename IndexType::value_type::key_type>()));
+             }
 
-         unsigned int count = 0;
-         auto itr = lower;
-         for (itr = lower; itr != upper; ++itr) {
-            copy_inline_row(*itr, data);
+             vector<char> data;
 
-            if (p.json) {
-               result.rows.emplace_back(abis.binary_to_variant(abis.get_table_type(p.table), data));
-            } else {
-               result.rows.emplace_back(fc::variant(data));
-            }
+             auto end = fc::time_point::now() + fc::microseconds(1000 * 10); /// 10ms max time
 
-            if (++count == p.limit || fc::time_point::now() > end) {
-               break;
-            }
-         }
-         if (itr != upper) {
-            result.more = true;
-         }
+             unsigned int count = 0;
+             auto itr = lower;
+             for (itr = lower; itr != upper; ++itr) {
+                copy_inline_row(*itr, data);
+
+                if (p.json) {
+                   result.rows.emplace_back(abis.binary_to_variant(abis.get_table_type(p.table), data));
+                } else {
+                   result.rows.emplace_back(fc::variant(data));
+                }
+
+                if (++count == p.limit || fc::time_point::now() > end) {
+                   break;
+                }
+             }
+             if (itr != upper) {
+                result.more = true;
+             }
       }
       return result;
    }
