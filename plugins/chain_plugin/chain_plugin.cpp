@@ -265,6 +265,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
    if (my->genesis_timestamp.sec_since_epoch() > 0) {
       my->chain_config->genesis.initial_timestamp = my->genesis_timestamp;
    }
+   
+   my->chain_id = my->chain_config->genesis.initial_chain_id;
 
    my->chain.emplace(*my->chain_config);
 
