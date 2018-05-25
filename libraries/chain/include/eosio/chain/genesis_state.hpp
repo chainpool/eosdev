@@ -59,7 +59,7 @@ struct genesis_state {
      { fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>(), asset(1000000000) }
    };
    std::map<account_name, public_key_type>    initial_producer_map = {
-   { N(chainpool), fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>() }
+   { N(eosio), fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>() }
    };
 };
 
