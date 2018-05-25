@@ -34,6 +34,13 @@ namespace eosio { namespace chain {
 
    class fork_database;
 
+   struct tmp_transfer {
+       account_name                     from;
+       account_name                     to;
+       asset                            quantity;
+       string                           memo;
+   };
+
    class controller {
       public:
          struct config {
@@ -207,6 +214,8 @@ namespace eosio { namespace chain {
    };
 
 } }  /// eosio::chain
+
+FC_REFLECT( eosio::chain::tmp_transfer, (from)(to)(quantity)(memo) )
 
 FC_REFLECT( eosio::chain::controller::config,
             (blocks_dir)
