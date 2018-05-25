@@ -218,7 +218,7 @@ struct faucet_testnet_plugin_impl {
       chain::chain_id_type chainid;
       auto& plugin = _app.get_plugin<chain_plugin>();
       plugin.get_chain_id(chainid);
-      const controller& cc = plugin.chain();
+      controller& cc = plugin.chain();
 
       signed_transaction trx;
       auto memo = fc::variant(fc::time_point::now()).as_string() + " " + fc::variant(fc::time_point::now().time_since_epoch()).as_string();
@@ -242,9 +242,11 @@ struct faucet_testnet_plugin_impl {
       trx.sign(_create_account_private_key, chainid);
 
       auto packed_trx = packed_transaction(trx);
+      fc::variant pretty_output;
       try {
          // cc.push_transaction( std::make_shared<transaction_metadata>(trx), trx.expiration );
          auto trx_trace_ptr = app().get_method<incoming::methods::transaction_sync>()(std::make_shared<packed_transaction>(packed_trx), true);
+         pretty_output = cc.to_variant_with_abi( *trx_trace_ptr );;
       } catch (const account_name_exists_exception& ) {
          // another transaction ended up adding the account, so look for alternates
          return find_alternates(new_account_name);
@@ -254,7 +256,7 @@ struct faucet_testnet_plugin_impl {
       _timer.expires_from_now(boost::posix_time::microseconds(_create_interval_msec * 1000));
       _timer.async_wait(boost::bind(&faucet_testnet_plugin_impl::timer_fired, this));
 
-      return std::make_pair(account_created, fc::variant(eosio::detail::faucet_testnet_empty()));
+      return std::make_pair(account_created, fc::variant(pretty_output));
    }
 
    results_pair create_faucet_account(const std::string& body) {
