@@ -236,8 +236,7 @@ struct faucet_testnet_plugin_impl {
 
       auto trx_ = (transaction)trx;
       auto txm = txfee_manager();
-      auto required_fee = txm.get_required_fee(trx_);
-      trx.fee = required_fee;
+      trx.fee = txm.get_required_fee(trx_);
 
       trx.sign(_create_account_private_key, chainid);
 
