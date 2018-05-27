@@ -677,7 +677,7 @@ struct controller_impl {
    const transaction_receipt& push_receipt( const T& trx, transaction_receipt_header::status_enum status,
                                             uint64_t cpu_usage_us, uint64_t net_usage ) {
       uint64_t net_usage_words = net_usage / 8;
-      FC_ASSERT( net_usage_words*8 == net_usage, "net_usage is not divisible by 8" );
+      // FC_ASSERT( net_usage_words*8 == net_usage, "net_usage is not divisible by 8" );
       pending->_pending_block_state->block->transactions.emplace_back( trx );
       transaction_receipt& r = pending->_pending_block_state->block->transactions.back();
       r.cpu_usage_us         = cpu_usage_us;
@@ -767,8 +767,14 @@ struct controller_impl {
                }
             }
 
-            trx_context.exec();
-            trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
+            try {
+              trx_context.exec();
+              trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
+            } catch (const fc::exception &e) {
+              trace->except = e;
+              trace->except_ptr = std::current_exception();
+              ilog("---trnasction exe failed--------trace: ${trace}", ("trace", trace));
+            }
 
             auto restore = make_block_restore_point();
 
