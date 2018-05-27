@@ -43,19 +43,8 @@ struct genesis_state {
       .max_authority_depth                  = config::default_max_auth_depth,
    };
 
-<<<<<<< HEAD
    time_point                               initial_timestamp;
    public_key_type                          initial_key;
-=======
-   time_point                               initial_timestamp = fc::time_point::from_iso_string( "2018-05-02T12:00:00" );
-
-   public_key_type                          initial_key = fc::variant("EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV").as<public_key_type>();
-
-   /**
-    * Temporary, will be moved elsewhere.
-    */
-   chain_id_type initial_chain_id;
->>>>>>> add initialize account & bp map
 
    /**
     * Get the chain_id corresponding to this genesis state.
