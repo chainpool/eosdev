@@ -395,10 +395,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
    } else {
       wlog( "Starting up fresh blockchain with default genesis state." );
    }
-   my->chain_config->blocks_dir = my->blocks_dir;
-   my->chain_config->state_dir = app().data_dir() / config::default_state_dir_name;
-   my->chain_config->read_only = my->readonly;
-  //  my->chain_config->state_size = my->state_size;
+
    auto genesis_v = fc::json::from_file(my->genesis_file);
    my->chain_config->genesis = genesis_v.as<genesis_state>();
    auto genesis_s = fc::json::to_string(genesis_v);
