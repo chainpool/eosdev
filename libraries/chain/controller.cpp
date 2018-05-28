@@ -42,6 +42,8 @@ struct pending_state {
 
    block_context                      _block_ctx;
 
+   uint32_t                           _count = 0; // count tx number.
+
    void push() {
       _db_session.push();
    }
@@ -707,14 +709,14 @@ struct controller_impl {
       return r;
    }
 
-    void check_action_size(vector<action>& actions)
+    void check_action(vector<action>& actions)
     {
-        for (int i = 0; i < actions.size(); i++)
-        {
+        FC_ASSERT(actions.size() == 1, "action size not equal 1");
+        for (int i = 0; i < actions.size(); i++) {
             action _a = actions.at(i) ;
+            FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 1024 * 1024 bytes");
 
-            if( "transfer" == _a.name.to_string() )
-            {
+            if ( "transfer" == _a.name.to_string() ) {
                 //printf("this is a transfer action. \n");
                 //FC_ASSERT(_a.data.size() < 200, "action bytes too large!");//the number of action bytes should not be greater than 200 char.
 
@@ -724,10 +726,15 @@ struct controller_impl {
                 FC_ASSERT(_v.memo.length() < 257, "action bytes too large!");
             }
         }
-
      }
 
-
+  void pending_count(action& act) {
+      if ( "setcode" == act.name.to_string() || "setabi" == act.name.to_string()) {
+          pending->_count = pending->_count + 40;
+      } else {
+          pending->_count++;
+      }
+  }
 
 
    /**
@@ -741,7 +748,7 @@ struct controller_impl {
                                            uint32_t billed_cpu_time_us  )
    {
       FC_ASSERT(deadline != fc::time_point(), "deadline cannot be uninitialized");
-      check_action_size(trx->trx.actions);
+      check_action(trx->trx.actions);
       transaction_trace_ptr trace;
       try {
          transaction_context trx_context(self, trx->trx, trx->id);
@@ -800,6 +807,7 @@ struct controller_impl {
                                                     : transaction_receipt::delayed;
                trace->receipt = push_receipt(trx->packed_trx, s, trx_context.billed_cpu_time_us, trace->net_usage);
                pending->_pending_block_state->trxs.emplace_back(trx);
+               pending_count(trx->trx.actions[0]);
             } else {
                transaction_receipt_header r;
                r.status = transaction_receipt::executed;
@@ -1314,6 +1322,11 @@ block_state_ptr controller::head_block_state()const {
 block_state_ptr controller::pending_block_state()const {
    if( my->pending ) return my->pending->_pending_block_state;
    return block_state_ptr();
+}
+
+uint32_t controller::pending_count_ret() const {
+   if( my->pending) return my->pending->_count;
+   return 0;
 }
 time_point controller::pending_block_time()const {
    FC_ASSERT( my->pending, "no pending block" );
