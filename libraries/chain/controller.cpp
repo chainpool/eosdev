@@ -367,7 +367,6 @@ struct controller_impl {
 
    void initialize_producer() {
       //seconds_per_day = 24 * 3600
-      uint32_t i = 1, seconds_per_day = 15;
       time_point_sec genesis_time = conf.genesis.initial_timestamp;
       for (auto producer : conf.genesis.initial_producer_map) {
          auto name = producer.first;
@@ -380,24 +379,13 @@ struct controller_impl {
          obj.commission_rate = 10000;
          obj.voteage_update_time = fc::time_point_sec(fc::time_point::now());
          obj.total_voteage = 0;
-         //obj.expiration = genesis_time + conf.genesis.initial_duration + i * (seconds_per_day);
-         //TODO::only for test
-         obj.expiration = fc::time_point_sec(fc::time_point::now()) + conf.genesis.initial_duration + i * (seconds_per_day);
+         obj.expiration = fc::time_point_sec(fc::time_point::now()) + conf.genesis.initial_duration;
          obj.is_bios = true;
          auto pk = obj.primary_key();
          auto db = memory_db(self);
          bytes data = fc::raw::pack(obj);
          db.db_store_i64(N(eosio), N(eosio), N(bps), N(name), pk, data.data(), data.size() );
-
-         if(name == N(eosio)){
-            accounts_table(name, asset(100000));
-         }else{
-            accounts_table(name, asset(0));
-         }
-
-         if(i++ >= eosio::chain::config::max_producers){
-            break;
-         }
+         accounts_table(name, asset(0));
       }
    }
 
@@ -434,16 +422,20 @@ struct controller_impl {
    }
 
    void initialize_account() {
-     for (auto account : conf.genesis.initial_account_map) {
-       auto public_key = account.first;
-       auto amount = account.second;
-       auto name = std::string(public_key);
-       name = name.substr(name.size() - 12, 12);
+     for (auto account : conf.genesis.initial_account_list) {
+       auto public_key = account.key;
+       auto amount = account.asset;
        authority auth(public_key);
-       bytes namef = format_name(name);
-       ilog("---name:${name}, publickey: ${pb}, amount: ${amount}", ("name", namef.data())("pb", public_key)("amount", amount));
-       create_native_account(string_to_name(namef.data()), auth, auth, false);
-       accounts_table(string_to_name(namef.data()), amount);
+       account_name acc_name = account.name;
+       if (acc_name == N(a)) {
+           auto name = std::string(public_key);
+           name = name.substr(name.size() - 12, 12);
+           bytes namef = format_name(name);
+           ilog("---name:${name}, publickey: ${pb}, amount: ${amount}", ("name", namef.data())("pb", public_key)("amount", amount));
+           acc_name = string_to_name(namef.data());
+       }
+       accounts_table(acc_name, amount);
+       create_native_account(acc_name, auth, auth, false);
      }
    }
 
