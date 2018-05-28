@@ -151,6 +151,7 @@ namespace eosio { namespace chain {
 
          time_point      pending_block_time()const;
          block_state_ptr pending_block_state()const;
+         uint32_t pending_count_ret()const;
 
          const producer_schedule_type&    active_producers()const;
          const producer_schedule_type&    pending_producers()const;

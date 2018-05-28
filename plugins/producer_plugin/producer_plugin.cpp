@@ -250,7 +250,6 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
 
          FC_ASSERT( block->timestamp < (fc::time_point::now() + fc::seconds(7)), "received a block from the future, ignoring it" );
 
-
          chain::controller& chain = app().get_plugin<chain_plugin>().chain();
 
          /* de-dupe here... no point in aborting block if we already know the block */
@@ -289,7 +288,6 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
                  ("n",block_header::num_from_id(block->id()))("t",block->timestamp)
                  ("count",block->transactions.size())("lib",chain.last_irreversible_block_num())("confs", block->confirmed)("latency", (fc::time_point::now() - block->timestamp).count()/1000 ) );
          }
-
       }
 
       std::vector<std::tuple<packed_transaction_ptr, bool, next_function<transaction_trace_ptr>>> _pending_incoming_transactions;
@@ -728,11 +726,13 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
    fc::time_point block_time = base + fc::microseconds(min_time_to_next_block);
 
 
-   if((block_time - now) < fc::microseconds(config::block_interval_us/10) ) {     // we must sleep for at least 50ms
+/*
+   if((block_time - now) < fc::microseconds(config::block_interval_us/10) ) {     // we must sleep for at least 300ms
 //      ilog("Less than ${t}us to next block time, time_to_next_block_time ${bt}",
 //           ("t", config::block_interval_us/10)("bt", block_time));
       block_time += fc::microseconds(config::block_interval_us);
    }
+*/
 
    _pending_block_mode = pending_block_mode::producing;
 
@@ -813,6 +813,10 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
       }
 
       for (auto itr = unapplied_trxs.begin(); itr != unapplied_trxs.end(); ++itr) {
+         if (chain.pending_count_ret() >= config::block_pending_count - 40) {
+            ilog("-----chain pending count: ${count}", ("count", chain.pending_count_ret()));
+            break;
+         }
          const auto& trx = *itr;
          if(persisted_by_id.find(trx->id) != persisted_by_id.end()) {
             // this is a persisted transaction, push it into the block (even if we are speculating) with
@@ -829,6 +833,11 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
       if (_pending_block_mode == pending_block_mode::producing) {
          for (const auto& trx : unapplied_trxs) {
+            if (chain.pending_count_ret() >= config::block_pending_count - 40) {
+               ilog("-----chain pending count: ${count}", ("count", chain.pending_count_ret()));
+               break;
+            }
+
             if (exhausted) {
                break;
             }
@@ -873,6 +882,11 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
          auto scheduled_trxs = chain.get_scheduled_transactions();
          for (const auto& trx : scheduled_trxs) {
+            if (chain.pending_count_ret() >= config::block_pending_count - 40) {
+               ilog("-----chain pending count: ${count}", ("count", chain.pending_count_ret()));
+               break;
+            }
+
             if (exhausted) {
                break;
             }
@@ -947,7 +961,8 @@ void producer_plugin_impl::schedule_production_loop() {
          // ship this block off no later than its deadline
          static const boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
          _timer.expires_at(epoch + boost::posix_time::microseconds(chain.pending_block_time().time_since_epoch().count()));
-         fc_dlog(_log, "Scheduling Block Production on Normal Block #${num} for ${time}", ("num", chain.pending_block_state()->block_num)("time",chain.pending_block_time()));
+         //fc_dlog(_log, "Scheduling Block Production on Normal Block #${num} for ${time}", ("num", chain.pending_block_state()->block_num)("time",chain.pending_block_time()));
+         ilog("Scheduling Block Production on Normal Block #${num} for ${time}", ("num", chain.pending_block_state()->block_num)("time",chain.pending_block_time()));
       } else {
          // ship this block off immediately
          _timer.expires_from_now( boost::posix_time::microseconds( 0 ));
@@ -1030,6 +1045,7 @@ void producer_plugin_impl::produce_block() {
    FC_ASSERT(_pending_block_mode == pending_block_mode::producing, "called produce_block while not actually producing");
 
    chain::controller& chain = app().get_plugin<chain_plugin>().chain();
+   FC_ASSERT(chain.pending_count_ret() <= config::block_pending_count, "pending_count must less than config::block_pending_count");
    const auto& pbs = chain.pending_block_state();
    const auto& hbs = chain.head_block_state();
    FC_ASSERT(pbs, "pending_block_state does not exist but it should, another plugin may have corrupted it");
