@@ -16,6 +16,7 @@
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/txfee_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
+#include <eosio/chain/config.hpp>
 
 #include <chainbase/chainbase.hpp>
 #include <fc/io/json.hpp>
@@ -362,20 +363,38 @@ struct controller_impl {
    }
 
    void initialize_producer() {
+      //seconds_per_day = 24 * 3600
+      uint32_t i = 1, seconds_per_day = 15;
+      time_point_sec genesis_time = conf.genesis.initial_timestamp;
       for (auto producer : conf.genesis.initial_producer_map) {
-        auto name = producer.first;
-        auto public_key = producer.second;
-        authority auth(public_key);
-        create_native_account(name, auth, auth, false);
-        memory_db::bp_info obj;
-        obj.name = name;
-        obj.producer_key = public_key;
-        obj.commission_rate = 100;
-        obj.voteage_update_time = fc::time_point_sec(fc::time_point::now());
-        auto pk = obj.primary_key();
-        auto db = memory_db(self);
-        bytes data = fc::raw::pack(obj);
-        db.db_store_i64(N(eosio), N(eosio), N(bps), N(name), pk, data.data(), data.size() );
+         auto name = producer.first;
+         auto public_key = producer.second;
+         authority auth(public_key);
+         create_native_account(name, auth, auth, false);
+         memory_db::bp_info obj;
+         obj.name = name;
+         obj.producer_key = public_key;
+         obj.commission_rate = 10000;
+         obj.voteage_update_time = fc::time_point_sec(fc::time_point::now());
+         obj.total_voteage = 0;
+         //obj.expiration = genesis_time + conf.genesis.initial_duration + i * (seconds_per_day);
+         //TODO::only for test
+         obj.expiration = fc::time_point_sec(fc::time_point::now()) + conf.genesis.initial_duration + i * (seconds_per_day);
+         obj.is_bios = true;
+         auto pk = obj.primary_key();
+         auto db = memory_db(self);
+         bytes data = fc::raw::pack(obj);
+         db.db_store_i64(N(eosio), N(eosio), N(bps), N(name), pk, data.data(), data.size() );
+
+         if(name == N(eosio)){
+            accounts_table(name, asset(100000));
+         }else{
+            accounts_table(name, asset(0));
+         }
+
+         if(i++ >= eosio::chain::config::max_producers){
+            break;
+         }
       }
    }
 
@@ -448,7 +467,6 @@ struct controller_impl {
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       initialize_account();
       initialize_producer();
-      accounts_table(N(eosio), asset(100000));
 
       auto empty_authority = authority(1, {}, {});
       auto active_producers_authority = authority(1, {}, {});
