@@ -264,6 +264,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       EOS_THROW( fixed_reversible_db_exception, "fixed corrupted reversible blocks database" );
    }
 
+   auto genesis_file = app().config_dir() / "genesis.json";
+   my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
+   //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
    if( options.count("genesis-json") ) {
       FC_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ), "Genesis State can only be specified on a fresh blockchain." );
 

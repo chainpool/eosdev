@@ -1930,8 +1930,8 @@ int main( int argc, char** argv ) {
    add_standard_transaction_options(abiSubcommand, "account@active");
    contractSubcommand->set_callback([&] {
       shouldSend = true;
-      set_code_callback();
       set_abi_callback();
+      set_code_callback();
       //std::cout << localized("Publishing contract...") << std::endl;
       //send_actions(std::move(actions), 10000, packed_transaction::zlib);
    });

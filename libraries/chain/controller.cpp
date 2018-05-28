@@ -310,12 +310,22 @@ struct controller_impl {
       });
    }
 
+   void initialize_schedule(producer_schedule_type &schedule) {
+       for (auto producer : conf.genesis.initial_producer_map) {
+         producer_key key;
+         key.producer_name = producer.first;
+         key.block_signing_key = producer.second;
+         schedule.producers.push_back(key);
+       }
+   }
    /**
     *  Sets fork database head to the genesis state.
     */
    void initialize_fork_db() {
       wlog( " Initializing new blockchain with genesis state                  " );
-      producer_schedule_type initial_schedule{ 0, {{N(biosbpa), fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>()}} };
+      producer_schedule_type initial_schedule;
+      initial_schedule.version = 0;
+      initialize_schedule(initial_schedule);
 
       block_header_state genheader;
       genheader.active_schedule       = initial_schedule;
@@ -386,8 +396,7 @@ struct controller_impl {
          auto pk = obj.primary_key();
          auto db = memory_db(self);
          bytes data = fc::raw::pack(obj);
-         db.db_store_i64(N(eosio), N(eosio), N(bps), N(name), pk, data.data(), data.size() );
-         accounts_table(name, asset(0));
+         db.db_store_i64(N(eosio), N(eosio), N(bps), name, pk, data.data(), data.size() );
       }
    }
 
@@ -398,7 +407,7 @@ struct controller_impl {
       bytes data = fc::raw::pack(obj);
       auto pk = obj.primary_key();
       auto db = memory_db(self);
-      db.db_store_i64(N(eosio), N(eosio), N(accounts), N(name), pk, data.data(), data.size() );
+      db.db_store_i64(N(eosio), N(eosio), N(accounts), name, pk, data.data(), data.size() );
    }
 
    bytes format_name(std::string name) {
