@@ -1929,11 +1929,11 @@ int main( int argc, char** argv ) {
    add_standard_transaction_options(codeSubcommand, "account@active");
    add_standard_transaction_options(abiSubcommand, "account@active");
    contractSubcommand->set_callback([&] {
-      shouldSend = false;
+      shouldSend = true;
       set_code_callback();
       set_abi_callback();
-      std::cout << localized("Publishing contract...") << std::endl;
-      send_actions(std::move(actions), 10000, packed_transaction::zlib);
+      //std::cout << localized("Publishing contract...") << std::endl;
+      //send_actions(std::move(actions), 10000, packed_transaction::zlib);
    });
    codeSubcommand->set_callback(set_code_callback);
    abiSubcommand->set_callback(set_abi_callback);
