@@ -37,7 +37,11 @@ int main(int argc, const char **argv) {
       out << "producer-name = " << name << "\n";
       out << "private-key = [\"" << string(sig_pub_key) << "\",\"" << string(sig_key) << "\"]\n";
 
-      gs.initial_producer_map[string_to_name(name.c_str())] = sig_pub_key;
+      producer_tuple tp;
+      tp.bpkey = sig_pub_key;
+      tp.name = string_to_name(name.c_str());
+      tp.commission_rate = i == 0 ? 0 : i == 22 ? 10000 : 10000 / i;
+      gs.initial_producer_list.push_back(tp);
       my_keymap.keymap[string_to_name(name.c_str())] = key; 
       my_sign_keymap.keymap[string_to_name(name.c_str())] = sig_key; 
   }

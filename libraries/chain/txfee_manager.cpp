@@ -10,16 +10,16 @@ namespace eosio { namespace chain {
 
    txfee_manager::txfee_manager(){
         fee_map[N(newaccount)] = asset(1000);
-        fee_map[N(setcode)] = asset(1000);
-        fee_map[N(setabi)] = asset(1000);
+        fee_map[N(setcode)] = asset(1000000);
+        fee_map[N(setabi)] = asset(1000000);
         fee_map[N(transfer)] = asset(1000);
-        fee_map[N(updatebp)] = asset(1000);
+        fee_map[N(updatebp)] = asset(1000000);
         fee_map[N(vote)] = asset(1000);
         fee_map[N(unfreeze)] = asset(1000);
         fee_map[N(claim)] = asset(1000);
-        fee_map[N(createp)] = asset(1000);
-        fee_map[N(proproposal)] = asset(1000);
-        fee_map[N(conproposal)] = asset(1000);
+        fee_map[N(createp)] = asset(1000000);
+        fee_map[N(proproposal)] = asset(10000);
+        fee_map[N(conproposal)] = asset(10000);
    }
 
    bool txfee_manager::check_transaction( const transaction& trx)const
