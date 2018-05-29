@@ -12,7 +12,7 @@ namespace eosio { namespace chain {
 
 genesis_state::genesis_state() {
    initial_timestamp = fc::time_point::from_iso_string( "2018-05-02T12:00:00" );
-   initial_key = fc::variant(eosio_root_key).as<public_key_type>();
+   initial_key = fc::variant("EOS1111111111111111111111111111111114T1Anm").as<public_key_type>();
 
    account_tuple acc_tuple = { fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>(), asset(1000000000), N(eosforce)};
    initial_account_list.push_back(acc_tuple);
