@@ -386,7 +386,7 @@ struct controller_impl {
          memory_db::bp_info obj;
          obj.name = name;
          obj.producer_key = public_key;
-         obj.commission_rate = 10000;
+         obj.commission_rate = 1000;
          obj.voteage_update_time = fc::time_point_sec(fc::time_point::now());
          obj.total_voteage = 0;
          auto pk = obj.primary_key();
