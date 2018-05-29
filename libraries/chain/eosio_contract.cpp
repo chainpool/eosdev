@@ -154,6 +154,33 @@ bool allow_setcode(apply_context& context, std::string code_id) {
   return false;
 }
 
+bool allow_setabi(apply_context& context, std::string abi_id) {
+  const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
+  chain::abi_def abi;
+  if(abi_serializer::to_abi(code_account.abi, abi)) {
+    abi_serializer abis(abi);
+    const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
+    if (t_id != nullptr) {
+      const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
+      auto it = idx.lower_bound(boost::make_tuple(t_id->id, config::system_account_name));
+      if (it != idx.end()) {
+        vector<char> data;
+        copy_inline_row(*it, data);
+        auto ct = abis.binary_to_variant("contractstat_info", data);
+        auto& obj = ct.get_object();
+        auto code_obj = obj["code"].get_object();
+        auto aid = code_obj["abi_id"].as_string();
+        if (aid == abi_id) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 void apply_eosio_setcode(apply_context& context) {
    const auto& cfg = context.control.get_global_properties().configuration;
 
@@ -228,6 +255,8 @@ void apply_eosio_setabi(apply_context& context) {
      FC_THROW("only allow eosio to setabi");
    }
 
+   auto abi_id = fc::sha256::hash(act.abi.data(), (uint32_t)act.abi.size());
+
    const auto& account = db.get<account_object,by_name>(act.account);
 
    int64_t abi_size = act.abi.size();
@@ -235,7 +264,20 @@ void apply_eosio_setabi(apply_context& context) {
    int64_t old_size = (int64_t)account.abi.size();
    int64_t new_size = abi_size;
 
+   // Not first time setabi
+   if (account.abi_version != fc::sha256::sha256()) {
+      // get allow_setabi from system contract table
+      if (!allow_setabi(context, abi_id.str())) {
+        // exit
+        FC_THROW("The abi_id '${abi_id}' is not approved by the system contract", ("abi_id", abi_id));
+      }
+      // FC_THROW("setabi twice is not allowed");
+   }
+
+   FC_ASSERT(account.abi_version != abi_id, "contract is already running this version of abi");
+
    db.modify( account, [&]( auto& a ) {
+      a.abi_version = abi_id;
       a.abi.resize( abi_size );
       if( abi_size > 0 )
          memcpy( a.abi.data(), act.abi.data(), abi_size );
