@@ -378,8 +378,6 @@ struct controller_impl {
    }
 
    void initialize_producer() {
-      //seconds_per_day = 24 * 3600
-      time_point_sec genesis_time = conf.genesis.initial_timestamp;
       for (auto producer : conf.genesis.initial_producer_map) {
          auto name = producer.first;
          auto public_key = producer.second;
@@ -391,8 +389,6 @@ struct controller_impl {
          obj.commission_rate = 10000;
          obj.voteage_update_time = fc::time_point_sec(fc::time_point::now());
          obj.total_voteage = 0;
-         obj.expiration = fc::time_point_sec(fc::time_point::now()) + conf.genesis.initial_duration;
-         obj.is_bios = true;
          auto pk = obj.primary_key();
          auto db = memory_db(self);
          bytes data = fc::raw::pack(obj);

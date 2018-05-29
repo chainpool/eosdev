@@ -49,8 +49,6 @@ struct genesis_state {
    };
 
    time_point                               initial_timestamp;
-   //TODO:only for test
-   uint32_t                                 initial_duration = 60; //5 days = 5*24*3600s
    public_key_type                          initial_key;
 
    /**
@@ -70,5 +68,5 @@ struct genesis_state {
 
 FC_REFLECT(eosio::chain::account_tuple, (key)(asset)(name))
 FC_REFLECT(eosio::chain::genesis_state,
-           (initial_timestamp)(initial_duration)(initial_key)
+           (initial_timestamp)(initial_key)
            (initial_configuration)(initial_account_list)(initial_producer_map))
