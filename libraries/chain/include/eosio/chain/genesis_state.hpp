@@ -16,6 +16,11 @@
 
 namespace eosio { namespace chain {
 
+struct account_tuple {
+    public_key_type key;
+    asset           asset;
+    account_name    name = N(a);
+};
 struct genesis_state {
    genesis_state();
 
@@ -52,16 +57,16 @@ struct genesis_state {
     * This is the SHA256 serialization of the genesis_state.
     */
    chain_id_type compute_chain_id() const;
-   std::map<public_key_type, asset>           initial_account_map = {
-     { fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>(), asset(1000000000) }
-   };
+   std::vector<account_tuple>                                 initial_account_list;
    std::map<account_name, public_key_type>    initial_producer_map = {
-   { N(eosio), fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>() }
+   { N(biosbpa), fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>() }
    };
 };
 
 } } // namespace eosio::chain
 
 
+FC_REFLECT(eosio::chain::account_tuple, (key)(asset)(name))
 FC_REFLECT(eosio::chain::genesis_state,
-           (initial_timestamp)(initial_key)(initial_configuration)(initial_account_map)(initial_producer_map))
+           (initial_timestamp)(initial_key)
+           (initial_configuration)(initial_account_list)(initial_producer_map))
