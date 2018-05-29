@@ -306,10 +306,10 @@ struct controller_impl {
    }
 
    void initialize_schedule(producer_schedule_type &schedule) {
-       for (auto producer : conf.genesis.initial_producer_map) {
+       for (auto producer : conf.genesis.initial_producer_list) {
          producer_key key;
-         key.producer_name = producer.first;
-         key.block_signing_key = producer.second;
+         key.producer_name = producer.name;
+         key.block_signing_key = producer.bpkey;
          schedule.producers.push_back(key);
        }
    }
@@ -373,15 +373,15 @@ struct controller_impl {
    }
 
    void initialize_producer() {
-      for (auto producer : conf.genesis.initial_producer_map) {
-         auto name = producer.first;
-         auto public_key = producer.second;
+      for (auto producer : conf.genesis.initial_producer_list) {
+         auto name = producer.name;
+         auto public_key = producer.bpkey;
          authority auth(public_key);
          create_native_account(name, auth, auth, false);
          memory_db::bp_info obj;
          obj.name = name;
          obj.producer_key = public_key;
-         obj.commission_rate = 1000;
+         obj.commission_rate = producer.commission_rate;
          obj.voteage_update_time = fc::time_point_sec(fc::time_point::now());
          obj.total_voteage = 0;
          auto pk = obj.primary_key();
