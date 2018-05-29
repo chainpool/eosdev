@@ -333,6 +333,9 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       wlog("The --truncate-at-block option can only be used with --fix-reversible-blocks without a replay or with --hard-replay-blockchain.");
    }
 
+   auto genesis_file = app().config_dir() / "genesis.json";
+   my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
+   //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
    if( options.count("genesis-json") ) {
       FC_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ), "Genesis state can only be set on a fresh blockchain." );
 
