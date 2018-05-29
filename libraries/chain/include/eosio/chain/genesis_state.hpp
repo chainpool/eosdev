@@ -21,6 +21,13 @@ struct account_tuple {
     asset           asset;
     account_name    name = N(a);
 };
+
+struct producer_tuple {
+    account_name name;
+    public_key_type bpkey;
+    uint32_t commission_rate;
+};
+
 struct genesis_state {
    genesis_state();
 
@@ -58,15 +65,14 @@ struct genesis_state {
     */
    chain_id_type compute_chain_id() const;
    std::vector<account_tuple>                                 initial_account_list;
-   std::map<account_name, public_key_type>    initial_producer_map = {
-   { N(biosbpa), fc::variant("EOS5zK6Eo9CrPJRVn2vKaqYRDBo7YMRjqy43DCASdTwryY9sWTRJ8").as<public_key_type>() }
-   };
+   std::vector<producer_tuple>                                initial_producer_list;
 };
 
 } } // namespace eosio::chain
 
 
 FC_REFLECT(eosio::chain::account_tuple, (key)(asset)(name))
+FC_REFLECT(eosio::chain::producer_tuple, (name)(bpkey)(commission_rate))
 FC_REFLECT(eosio::chain::genesis_state,
            (initial_timestamp)(initial_key)
-           (initial_configuration)(initial_account_list)(initial_producer_map))
+           (initial_configuration)(initial_account_list)(initial_producer_list))
