@@ -745,6 +745,7 @@ struct controller_impl {
                                            uint32_t billed_cpu_time_us  )
    {
       FC_ASSERT(deadline != fc::time_point(), "deadline cannot be uninitialized");
+	  FC_ASSERT(trx->trx.delay_sec.value == 0UL, "delay,transaction failed");
       check_action(trx->trx.actions);
       transaction_trace_ptr trace;
       try {
