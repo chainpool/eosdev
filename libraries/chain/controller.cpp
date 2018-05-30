@@ -732,6 +732,7 @@ struct controller_impl {
    {
       FC_ASSERT(deadline != fc::time_point(), "deadline cannot be uninitialized");
 	  FC_ASSERT(trx->trx.delay_sec.value == 0UL, "delay,transaction failed");
+      FC_ASSERT(trx->trx.context_free_actions.size()==0,"context free actions size should be zero!");
       check_action(trx->trx.actions);
       transaction_trace_ptr trace;
       try {
