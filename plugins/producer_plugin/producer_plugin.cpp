@@ -814,7 +814,7 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
       }
 
       for (auto itr = unapplied_trxs.begin(); itr != unapplied_trxs.end(); ++itr) {
-         if (pbs->block->transactions.size() > config::block_max_tx_num) {
+         if (pbs->block->transactions.size() >= config::block_max_tx_num) {
             ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
             break;
          }
@@ -834,8 +834,8 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
       if (_pending_block_mode == pending_block_mode::producing) {
          for (const auto& trx : unapplied_trxs) {
-            if (pbs->block->transactions.size() > config::block_max_tx_num) {
-               ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
+            if (pbs->block->transactions.size() >= config::block_max_tx_num) {
+               ilog("-----chain max transaction size: ${count}", ("count", pbs->block->transactions.size()));
                break;
             }
 
@@ -883,7 +883,7 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
          auto scheduled_trxs = chain.get_scheduled_transactions();
          for (const auto& trx : scheduled_trxs) {
-            if (pbs->block->transactions.size() > config::block_max_tx_num) {
+            if (pbs->block->transactions.size() >= config::block_max_tx_num) {
                ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
                break;
             }
