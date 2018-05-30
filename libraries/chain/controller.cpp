@@ -42,8 +42,6 @@ struct pending_state {
 
    block_context                      _block_ctx;
 
-   uint32_t                           _count = 0; // count tx number.
-
    void push() {
       _db_session.push();
    }
@@ -711,7 +709,7 @@ struct controller_impl {
         FC_ASSERT(actions.size() == 1, "action size not equal 1");
         for (int i = 0; i < actions.size(); i++) {
             action _a = actions.at(i) ;
-            FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 1024 * 1024 bytes");
+            FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
 
             if ( "transfer" == _a.name.to_string() ) {
                 //printf("this is a transfer action. \n");
@@ -724,15 +722,6 @@ struct controller_impl {
             }
         }
      }
-
-  void pending_count(action& act) {
-      if ( "setcode" == act.name.to_string() || "setabi" == act.name.to_string()) {
-          pending->_count = pending->_count + 40;
-      } else {
-          pending->_count++;
-      }
-  }
-
 
    /**
     *  This is the entry point for new transactions to the block state. It will check authorization and
@@ -806,7 +795,6 @@ struct controller_impl {
                                                     : transaction_receipt::delayed;
                trace->receipt = push_receipt(trx->packed_trx, s, trx_context.billed_cpu_time_us, trace->net_usage);
                pending->_pending_block_state->trxs.emplace_back(trx);
-               pending_count(trx->trx.actions[0]);
             } else {
                transaction_receipt_header r;
                r.status = transaction_receipt::executed;
@@ -1323,10 +1311,6 @@ block_state_ptr controller::pending_block_state()const {
    return block_state_ptr();
 }
 
-uint32_t controller::pending_count_ret() const {
-   if( my->pending) return my->pending->_count;
-   return 0;
-}
 time_point controller::pending_block_time()const {
    FC_ASSERT( my->pending, "no pending block" );
    return my->pending->_pending_block_state->header.timestamp;
