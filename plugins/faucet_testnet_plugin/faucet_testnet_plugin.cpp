@@ -5,6 +5,8 @@
 #include <eosio/faucet_testnet_plugin/faucet_testnet_plugin.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
 #include <eosio/utilities/key_conversion.hpp>
+#include <eosio/chain/plugin_interface.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 
 #include <fc/variant.hpp>
 #include <fc/io/json.hpp>
@@ -51,6 +53,7 @@ namespace eosio {
 static appbase::abstract_plugin& _faucet_testnet_plugin = app().register_plugin<faucet_testnet_plugin>();
 
 using namespace eosio::chain;
+using namespace eosio::chain::plugin_interface;
 using public_key_type = chain::public_key_type;
 using key_pair = std::pair<std::string, std::string>;
 using results_pair = std::pair<uint32_t,fc::variant>;
@@ -212,10 +215,9 @@ struct faucet_testnet_plugin_impl {
          return std::make_pair(too_many_requests, fc::variant(response));
       }
 
-      chain::chain_id_type chainid;
       auto& plugin = _app.get_plugin<chain_plugin>();
-      plugin.get_chain_id(chainid);
       controller& cc = plugin.chain();
+      auto chainid = cc.get_chain_id();
 
       signed_transaction trx;
       auto memo = fc::variant(fc::time_point::now()).as_string() + " " + fc::variant(fc::time_point::now().time_since_epoch()).as_string();
@@ -230,10 +232,18 @@ struct faucet_testnet_plugin_impl {
 
       trx.expiration = cc.head_block_time() + fc::seconds(30);
       trx.set_reference_block(cc.head_block_id());
+
+      auto txm = txfee_manager();
+      trx.fee = txm.get_required_fee((transaction)trx);
+
       trx.sign(_create_account_private_key, chainid);
 
+      auto packed_trx = packed_transaction(trx);
+      fc::variant pretty_output;
+
       try {
-         cc.push_transaction( std::make_shared<transaction_metadata>(trx) );
+         auto trx_trace_ptr = app().get_method<incoming::methods::transaction_sync>()(std::make_shared<packed_transaction>(packed_trx), true);
+         pretty_output = cc.to_variant_with_abi( *trx_trace_ptr );;
       } catch (const account_name_exists_exception& ) {
          // another transaction ended up adding the account, so look for alternates
          return find_alternates(new_account_name);
@@ -243,7 +253,7 @@ struct faucet_testnet_plugin_impl {
       _timer.expires_from_now(boost::posix_time::microseconds(_create_interval_msec * 1000));
       _timer.async_wait(boost::bind(&faucet_testnet_plugin_impl::timer_fired, this));
 
-      return std::make_pair(account_created, fc::variant(eosio::detail::faucet_testnet_empty()));
+      return std::make_pair(account_created, fc::variant(pretty_output));
    }
 
    results_pair create_faucet_account(const std::string& body) {
