@@ -232,7 +232,6 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
 
          int _time_for_future_block = config::block_interval_ms*2/1000;//double transaction time
          FC_ASSERT( block->timestamp < (fc::time_point::now() + fc::seconds(_time_for_future_block)), "received a block from the future, ignoring it" );
-         FC_ASSERT( block->transactions.size() <= config::block_max_tx_num);
 
          chain::controller& chain = app().get_plugin<chain_plugin>().chain();
 
@@ -272,6 +271,7 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
                   deadline_is_subjective = true;
                   deadline = block_time;
                }
+
 
                auto trace = chain.push_transaction(std::make_shared<transaction_metadata>(*trx), deadline);
 
@@ -685,8 +685,8 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
       }
 
       for (auto itr = unapplied_trxs.begin(); itr != unapplied_trxs.end(); ++itr) {
-         if (pbs->block->transactions.size() > config::block_max_tx_num) {
-            ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
+         if (pbs->block->transactions.size() >= config::block_max_tx_num) {
+            ilog("-----chain max transaction size: ${count}", ("count", pbs->block->transactions.size()));
             break;
          }
          const auto& trx = *itr;
@@ -705,8 +705,8 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
       if (_pending_block_mode == pending_block_mode::producing) {
          for (const auto& trx : unapplied_trxs) {
-            if (pbs->block->transactions.size() > config::block_max_tx_num) {
-               ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
+            if (pbs->block->transactions.size() >= config::block_max_tx_num) {
+               ilog("-----chain max transaction size: ${count}", ("count", pbs->block->transactions.size()));
                break;
             }
 
@@ -754,8 +754,8 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
          auto scheduled_trxs = chain.get_scheduled_transactions();
          for (const auto& trx : scheduled_trxs) {
-            if (pbs->block->transactions.size() > config::block_max_tx_num) {
-               ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
+            if (pbs->block->transactions.size() >= config::block_max_tx_num) {
+               ilog("-----chain max transaction size: ${count}", ("count", pbs->block->transactions.size()));
                break;
             }
 
