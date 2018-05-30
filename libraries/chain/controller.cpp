@@ -784,7 +784,7 @@ struct controller_impl {
                try {
                   auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
                   auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), true, config::default_min_transaction_cpu_usage);
-                  if( onftrace->except ) throw *onftrace->except; 
+                  if( onftrace->except ) throw *onftrace->except;
                   ilog("-------call onfee function tx");
                } catch ( ... ) {
                   FC_ASSERT(false, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
@@ -1294,7 +1294,7 @@ struct controller_impl {
       on_fee_act.account = config::system_account_name;
       on_fee_act.name = N(onfee);
       on_fee_act.authorization = vector<permission_level>{{actor, config::active_name}};
-      
+
       fee_paramter param(actor, fee, self.head_block_header().producer);
       on_fee_act.data = fc::raw::pack(param);
 
