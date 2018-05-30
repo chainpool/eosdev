@@ -249,6 +249,7 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
          fc_dlog(_log, "received incoming block ${id}", ("id", block->id()));
 
          FC_ASSERT( block->timestamp < (fc::time_point::now() + fc::seconds(7)), "received a block from the future, ignoring it" );
+         FC_ASSERT( block->transactions.size() <= config::block_max_tx_num);
 
          chain::controller& chain = app().get_plugin<chain_plugin>().chain();
 
@@ -813,8 +814,8 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
       }
 
       for (auto itr = unapplied_trxs.begin(); itr != unapplied_trxs.end(); ++itr) {
-         if (chain.pending_count_ret() >= config::block_pending_count - 40) {
-            ilog("-----chain pending count: ${count}", ("count", chain.pending_count_ret()));
+         if (pbs->block->transactions.size() > config::block_max_tx_num) {
+            ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
             break;
          }
          const auto& trx = *itr;
@@ -833,8 +834,8 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
       if (_pending_block_mode == pending_block_mode::producing) {
          for (const auto& trx : unapplied_trxs) {
-            if (chain.pending_count_ret() >= config::block_pending_count - 40) {
-               ilog("-----chain pending count: ${count}", ("count", chain.pending_count_ret()));
+            if (pbs->block->transactions.size() > config::block_max_tx_num) {
+               ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
                break;
             }
 
@@ -882,8 +883,8 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block() {
 
          auto scheduled_trxs = chain.get_scheduled_transactions();
          for (const auto& trx : scheduled_trxs) {
-            if (chain.pending_count_ret() >= config::block_pending_count - 40) {
-               ilog("-----chain pending count: ${count}", ("count", chain.pending_count_ret()));
+            if (pbs->block->transactions.size() > config::block_max_tx_num) {
+               ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
                break;
             }
 
@@ -1045,11 +1046,11 @@ void producer_plugin_impl::produce_block() {
    FC_ASSERT(_pending_block_mode == pending_block_mode::producing, "called produce_block while not actually producing");
 
    chain::controller& chain = app().get_plugin<chain_plugin>().chain();
-   FC_ASSERT(chain.pending_count_ret() <= config::block_pending_count, "pending_count must less than config::block_pending_count");
    const auto& pbs = chain.pending_block_state();
    const auto& hbs = chain.head_block_state();
    FC_ASSERT(pbs, "pending_block_state does not exist but it should, another plugin may have corrupted it");
    auto signature_provider_itr = _signature_providers.find( pbs->block_signing_key );
+   FC_ASSERT(pbs->block->transactions.size() <= config::block_max_tx_num, "block txs must less than config::block_max_tx_num");
 
    FC_ASSERT(signature_provider_itr != _signature_providers.end(), "Attempting to produce a block for which we don't have the private key");
 

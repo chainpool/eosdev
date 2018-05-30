@@ -41,8 +41,6 @@ struct pending_state {
 
    controller::block_status           _block_status = controller::block_status::incomplete;
 
-   uint32_t                           _count = 0; // count tx number.
-
    void push() {
       _db_session.push();
    }
@@ -722,15 +720,6 @@ struct controller_impl {
         }
      }
 
-  void pending_count(action& act) {
-      if ( "setcode" == act.name.to_string() || "setabi" == act.name.to_string()) {
-          pending->_count = pending->_count + 40;
-      } else {
-          pending->_count++;
-      }
-  }
-
-
    /**
     *  This is the entry point for new transactions to the block state. It will check authorization and
     *  determine whether to execute it now or to delay it. Lastly it inserts a transaction receipt into
@@ -807,7 +796,6 @@ struct controller_impl {
                                                     : transaction_receipt::delayed;
                trace->receipt = push_receipt(trx->packed_trx, s, trx_context.billed_cpu_time_us, trace->net_usage);
                pending->_pending_block_state->trxs.emplace_back(trx);
-               pending_count(trx->trx.actions[0]);
             } else {
                transaction_receipt_header r;
                r.status = transaction_receipt::executed;
@@ -1373,10 +1361,6 @@ block_state_ptr controller::pending_block_state()const {
    return block_state_ptr();
 }
 
-uint32_t controller::pending_count_ret() const {
-   if( my->pending) return my->pending->_count;
-   return 0;
-}
 time_point controller::pending_block_time()const {
    FC_ASSERT( my->pending, "no pending block" );
    return my->pending->_pending_block_state->header.timestamp;
