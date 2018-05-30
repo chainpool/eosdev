@@ -706,7 +706,7 @@ struct controller_impl {
         FC_ASSERT(actions.size() == 1, "action size not equal 1");
         for (int i = 0; i < actions.size(); i++) {
             action _a = actions.at(i) ;
-            FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 1024 * 1024 bytes");
+            FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
 
             if ( "transfer" == _a.name.to_string() ) {
                 //printf("this is a transfer action. \n");
