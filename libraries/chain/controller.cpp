@@ -709,8 +709,6 @@ struct controller_impl {
             FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
 
             if ( "transfer" == _a.name.to_string() ) {
-                //printf("this is a transfer action. \n");
-                //FC_ASSERT(_a.data.size() < 200, "action bytes too large!");//the number of action bytes should not be greater than 200 char.
 
                 FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
                 auto _v = fc::raw::unpack<tmp_transfer >(_a.data);
