@@ -12,7 +12,7 @@ namespace eosio { namespace chain { namespace config {
 
 typedef __uint128_t uint128_t;
 
-const static auto block_pending_count        = 100;
+const static auto block_max_tx_num        = 30;
 
 const static auto default_blocks_dir_name    = "blocks";
 const static auto reversible_blocks_dir_name = "reversible";
@@ -21,7 +21,7 @@ const static auto default_reversible_cache_size = 340*1024*1024ll;/// 1MB * 340 
 const static auto default_state_dir_name     = "state";
 const static auto forkdb_filename            = "forkdb.dat";
 const static auto default_state_size         = 1*1024*1024*1024ll;
-const static auto default_trx_size           = 1024*1024ll;
+const static auto default_trx_size           = 100*1024ll;
 
 
 const static uint64_t system_account_name    = N(eosio);
