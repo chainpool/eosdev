@@ -227,7 +227,7 @@ namespace eosio {
 
          void on_action_trace( const action_trace& at ) {
             if( filter( at ) ) {
-               idump((fc::json::to_pretty_string(at)));
+               //idump((fc::json::to_pretty_string(at)));
                auto& chain = chain_plug->chain();
                auto& db = chain.db();
 
