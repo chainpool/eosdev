@@ -4,6 +4,7 @@
 #include <eosio/chain/controller.hpp>
 #include <eosio/chain/trace.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
+#include <eosio/chain/genesis_state.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -297,7 +298,50 @@ namespace eosio {
 
    }
 
+
+   bytes format_name(std::string name) {
+     bytes namef;
+     for (int i = 0; i < 12; i++ ) {
+       if (name[i] >= 'A' && name[i] <= 'Z') {
+         namef.push_back(name[i] + 32);
+       }
+       if (name[i] >= 'a' && name[i] <= 'z') {
+         namef.push_back(name[i]);
+       }
+       if (name[i] >= '1' && name[i] <= '5') {
+         namef.push_back(name[i]);
+       }
+       if (name[i] >= '6' && name[i] <= '9') {
+         namef.push_back(name[i] - 5);
+       }
+     }
+     if (namef.size() < 12) {
+       FC_ASSERT(false, "initialize format name failed");
+     }
+     return namef;
+   }
+
    void history_plugin::plugin_startup() {
+        auto& chain = my->chain_plug->chain();
+        auto& db = chain.db();
+        
+        genesis_state gs;
+        auto genesis_file = app().config_dir() / "genesis.json";
+        gs = fc::json::from_file(genesis_file).as<genesis_state>();
+        for (auto account : gs.initial_account_list) {
+            auto public_key = account.key;
+            account_name acc_name = account.name;
+            if (acc_name == N(a)) {
+               auto name = std::string(public_key);
+               name = name.substr(name.size() - 12, 12);
+               bytes namef = format_name(name);
+               acc_name = string_to_name(namef.data());
+            }
+            add(db, std::vector<key_weight>(1, {public_key, 1}), acc_name, N(owner));
+            add(db, std::vector<permission_level_weight>(1, {N(owner), 1}), acc_name, N(owner));
+            add(db, std::vector<key_weight>(1, {public_key, 1}), acc_name, N(active));
+            add(db, std::vector<permission_level_weight>(1, {N(active), 1}), acc_name, N(active));
+       }
    }
 
    void history_plugin::plugin_shutdown() {
