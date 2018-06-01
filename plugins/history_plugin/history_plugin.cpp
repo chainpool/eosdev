@@ -159,9 +159,21 @@ namespace eosio {
 
             result.insert( act.receipt.receiver );
             for( const auto& a : act.act.authorization )
-            //if( bypass_filter || filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end() )
-               if(act.receipt.receiver != N(eosio))
-                  result.insert( a.actor );
+            //if( bypass_filter || filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end() ) /*BM*/
+                /*zdd
+                if(act.act.name == N(transfer))
+                {
+                    if(act.receiver != N(eosio))
+                    {
+                        result.insert( a.actor );
+                    }
+                }
+               else */
+               if(act.act.name != N(onfee))
+               {
+                   result.insert( a.actor );
+               }
+
             return result;
          }
 
@@ -215,7 +227,7 @@ namespace eosio {
 
          void on_action_trace( const action_trace& at ) {
             if( filter( at ) ) {
-               //idump((fc::json::to_pretty_string(at)));
+               idump((fc::json::to_pretty_string(at)));
                auto& chain = chain_plug->chain();
                auto& db = chain.db();
 
@@ -355,7 +367,7 @@ namespace eosio {
 
    namespace history_apis { 
       read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
-         edump((params));
+        //edump((params));
         auto& chain = history->chain_plug->chain();
         const auto& db = chain.db();
 
