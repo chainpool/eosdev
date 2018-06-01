@@ -10,7 +10,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/signals2/connection.hpp>
 
-namespace eosio { 
+namespace eosio {
    using namespace chain;
    using boost::signals2::scoped_connection;
 
@@ -51,7 +51,7 @@ namespace eosio {
       indexed_by<
          ordered_unique<tag<by_id>, member<action_history_object, action_history_object::id_type, &action_history_object::id>>,
          ordered_unique<tag<by_action_sequence_num>, member<action_history_object, uint64_t, &action_history_object::action_sequence_num>>,
-         ordered_unique<tag<by_trx_id>, 
+         ordered_unique<tag<by_trx_id>,
             composite_key< action_history_object,
                member<action_history_object, transaction_id_type, &action_history_object::trx_id>,
                member<action_history_object, uint64_t, &action_history_object::action_sequence_num >
@@ -64,7 +64,7 @@ namespace eosio {
       account_history_object,
       indexed_by<
          ordered_unique<tag<by_id>, member<account_history_object, account_history_object::id_type, &account_history_object::id>>,
-         ordered_unique<tag<by_account_action_seq>, 
+         ordered_unique<tag<by_account_action_seq>,
             composite_key< account_history_object,
                member<account_history_object, account_name, &account_history_object::account >,
                member<account_history_object, int32_t, &account_history_object::account_sequence_num >
@@ -158,9 +158,8 @@ namespace eosio {
 
             result.insert( act.receipt.receiver );
             for( const auto& a : act.act.authorization )
-               if( bypass_filter ||
-                   filter_on.find({ act.receipt.receiver, act.act.name, 0}) != filter_on.end() ||
-                   filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end() )
+            //if( bypass_filter || filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end() )
+               if(act.receipt.receiver != N(eosio))
                   result.insert( a.actor );
             return result;
          }
@@ -174,7 +173,7 @@ namespace eosio {
 
             uint64_t asn = 0;
             if( itr != idx.begin() ) --itr;
-            if( itr->account == n ) 
+            if( itr->account == n )
                asn = itr->account_sequence_num + 1;
 
             //idump((n)(act.receipt.global_sequence)(asn));
@@ -229,7 +228,7 @@ namespace eosio {
                   aho.block_time = chain.pending_block_time();
                   aho.trx_id     = at.trx_id;
                });
-               
+
                auto aset = account_set( at );
                for( auto a : aset ) {
                   record_account_action( a, at );
@@ -308,7 +307,7 @@ namespace eosio {
 
 
 
-   namespace history_apis { 
+   namespace history_apis {
       read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
          edump((params));
         auto& chain = history->chain_plug->chain();
@@ -329,7 +328,7 @@ namespace eosio {
                   pos = itr->account_sequence_num+1;
             } else if( itr != idx.begin() ) --itr;
 
-            if( itr->account == n ) 
+            if( itr->account == n )
                pos = itr->account_sequence_num + 1;
         }
 
