@@ -23,6 +23,10 @@ class memory_db {
       :db(con.db())
       {
       }
+      memory_db(chainbase::database& db)
+      :db(db)
+      {
+      }
    /// Database methods:
    public:
       int  db_store_i64( uint64_t code, uint64_t scope, uint64_t table, const account_name& payer, uint64_t id, const char* buffer, size_t buffer_size );
