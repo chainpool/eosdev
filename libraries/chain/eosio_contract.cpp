@@ -10,6 +10,7 @@
 #include <eosio/chain/apply_context.hpp>
 #include <eosio/chain/transaction.hpp>
 #include <eosio/chain/exceptions.hpp>
+#include <eosio/chain/memory_db.hpp>
 
 #include <eosio/chain/account_object.hpp>
 #include <eosio/chain/permission_object.hpp>
@@ -65,6 +66,17 @@ void validate_authority_precondition( const apply_context& context, const author
    }
 }
 
+
+  void accounts_table(account_name name, chainbase::database& cdb) {
+      memory_db::account_info obj;
+      obj.name = name;
+      obj.available = asset(0);
+      bytes data = fc::raw::pack(obj);
+      auto pk = obj.primary_key();
+      memory_db db(cdb);
+      db.db_store_i64(N(eosio), N(eosio), N(accounts), name, pk, data.data(), data.size() );
+   }
+
 /**
  *  This method is called assuming precondition_system_newaccount succeeds a
  */
@@ -86,11 +98,12 @@ void apply_eosio_newaccount(apply_context& context) {
    EOS_ASSERT( name_str.size() <= 12, action_validate_exception, "account names can only be 12 chars long" );
 
    // Check if the creator is privileged
+   EOS_ASSERT(!creator.privileged, action_validate_excption, "not support privileged accounts");
    const auto &creator = db.get<account_object, by_name>(create.creator);
-   if( !creator.privileged ) {
+   /*if( !creator.privileged ) {
       EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
                   "only privileged accounts can have names that start with 'eosio.'" );
-   }
+   }*/
 
    auto existing_account = db.find<account_object, by_name>(create.name);
    EOS_ASSERT(existing_account == nullptr, action_validate_exception,
@@ -105,6 +118,7 @@ void apply_eosio_newaccount(apply_context& context) {
    db.create<account_sequence_object>([&](auto& a) {
       a.name = create.name;
    });
+   accounts_table(create.name, db);
 
    for( const auto& auth : { create.owner, create.active } ){
       validate_authority_precondition( context, auth );
