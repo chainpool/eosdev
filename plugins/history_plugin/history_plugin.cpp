@@ -322,9 +322,9 @@ namespace eosio {
 
    void history_plugin::plugin_startup() {
         auto& chain = my->chain_plug->chain();
-        if (chain.head_block_num() == 0) {
+        
+        if (chain.head_block_num() == 1) {
                 auto& db = chain.db();
-                
                 genesis_state gs;
                 auto genesis_file = app().config_dir() / "genesis.json";
                 gs = fc::json::from_file(genesis_file).as<genesis_state>();
