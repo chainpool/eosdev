@@ -98,8 +98,8 @@ void apply_eosio_newaccount(apply_context& context) {
    EOS_ASSERT( name_str.size() <= 12, action_validate_exception, "account names can only be 12 chars long" );
 
    // Check if the creator is privileged
-   EOS_ASSERT(!creator.privileged, action_validate_excption, "not support privileged accounts");
    const auto &creator = db.get<account_object, by_name>(create.creator);
+   EOS_ASSERT(!creator.privileged, action_validate_exception, "not support privileged accounts");
    /*if( !creator.privileged ) {
       EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
                   "only privileged accounts can have names that start with 'eosio.'" );
