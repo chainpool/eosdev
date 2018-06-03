@@ -25,6 +25,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <fc/io/fstream.hpp>
 #include <fc/io/json.hpp>
 #include <fc/variant.hpp>
 #include <signal.h>
@@ -365,6 +366,21 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
    auto genesis_file = app().config_dir() / "genesis.json";
    my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
+   auto wastPath = app().config_dir() / "System.wasm";
+   std::string wast;
+   fc::read_file_contents(wastPath, wast);
+   FC_ASSERT(!wast.empty(), "no wast file found ");
+   const string binary_wasm_header("\x00\x61\x73\x6d", 4);
+   if(wast.compare(0, 4, binary_wasm_header) == 0) {
+       my->chain_config->genesis.code = bytes(wast.begin(), wast.end());
+   }
+   else {
+       FC_ASSERT("not support this wast");
+   }
+   auto abiPath = app().config_dir() / "System.abi";
+   FC_ASSERT( fc::exists( abiPath ), "no abi file found ");
+   auto abi = fc::json::from_file(abiPath).as<abi_def>();
+   my->chain_config->genesis.abi = fc::raw::pack(abi);
    //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
    if( options.count("genesis-json") ) {
       FC_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ), "Genesis state can only be set on a fresh blockchain." );
