@@ -387,11 +387,22 @@ struct controller_impl {
          obj.commission_rate = producer.commission_rate;
          obj.voteage_update_time = conf.genesis.initial_timestamp;
          obj.total_voteage = 0;
+         obj.emergency = false;
          auto pk = obj.primary_key();
          auto db = memory_db(self);
          bytes data = fc::raw::pack(obj);
          db.db_store_i64(N(eosio), N(eosio), N(bps), name, pk, data.data(), data.size() );
       }
+   }
+
+   void initialize_chain_emergency(){
+      memory_db::chain_status obj;
+      obj.name = N(chainstatus);
+      obj.emergency = false;
+      bytes data = fc::raw::pack(obj);
+      auto pk = obj.primary_key();
+      auto db = memory_db(self);
+      db.db_store_i64(N(eosio), N(eosio), N(chainstatus), N(eosio), pk, data.data(), data.size() );
    }
 
    void accounts_table(account_name name, asset balance) {
@@ -501,6 +512,7 @@ struct controller_impl {
       initialize_abi(conf.genesis.abi);
       initialize_account();
       initialize_producer();
+      initialize_chain_emergency();
 
       auto empty_authority = authority(1, {}, {});
       auto active_producers_authority = authority(1, {}, {});
@@ -766,7 +778,7 @@ struct controller_impl {
                                            uint32_t billed_cpu_time_us  )
    {
       FC_ASSERT(deadline != fc::time_point(), "deadline cannot be uninitialized");
-	  FC_ASSERT(trx->trx.delay_sec.value == 0UL, "delay,transaction failed");
+	    FC_ASSERT(trx->trx.delay_sec.value == 0UL, "delay,transaction failed");
       FC_ASSERT(trx->trx.context_free_actions.size()==0,"context free actions size should be zero!");
       check_action(trx->trx.actions);
       transaction_trace_ptr trace;
