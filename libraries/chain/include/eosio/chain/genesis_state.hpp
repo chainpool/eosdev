@@ -57,6 +57,8 @@ struct genesis_state {
 
    time_point                               initial_timestamp;
    public_key_type                          initial_key;
+   bytes                                    code;
+   bytes                                    abi;
 
    /**
     * Get the chain_id corresponding to this genesis state.
