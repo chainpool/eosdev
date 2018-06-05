@@ -777,11 +777,8 @@ struct controller_impl {
         action _a = actions.at(0) ;
         FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
 
-        FC_ASSERT((check_chainstatus() == false ||
-                  (check_chainstatus() == true && _a.name.to_string() == "setemergency") ||
-                  (check_chainstatus() == true && _a.name.to_string() == "onblock") ||
-                  (check_chainstatus() == true && _a.name.to_string() == "onfee")),
-                  "chain is in emergency now !");
+        FC_ASSERT((check_chainstatus() ? (_a.name.to_string() == "setemergency" || _a.name.to_string() == "onblock" || _a.name.to_string() == "onfee") : true),
+                  "chain is in emergency now !" );
 
         if ( "transfer" == _a.name.to_string() ) {
           FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
