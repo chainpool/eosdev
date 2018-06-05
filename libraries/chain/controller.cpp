@@ -109,8 +109,8 @@ struct controller_impl {
     resource_limits( db ),
     authorization( s, db ),
     txfee(),
-    chain_id( cfg.genesis.compute_chain_id() ),
-    conf( cfg )
+    conf( cfg ),
+    chain_id( cfg.genesis.compute_chain_id() )
    {
 
 #define SET_APP_HANDLER( receiver, contract, action) \
@@ -750,20 +750,44 @@ struct controller_impl {
       return r;
    }
 
+    bool check_chainstatus(){
+      const auto * cstatus_tid = db.find<table_id_object, by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
+      if(cstatus_tid == nullptr){
+        elog("get chainstatus fatal: cstatus_tid == nullptr");
+        return true;
+      }
+
+      const auto &idx = db.get_index<key_value_index, by_scope_primary>();
+      auto it = idx.lower_bound(boost::make_tuple(cstatus_tid->id, N(chainstatus)));
+      if (it == idx.end()) {
+        elog("get chainstatus fatal: it == idx.end()");
+        return true;
+      }
+
+      vector<char> data(it->value.size());
+      memcpy(data.data(),it->value.data(),it->value.size());
+
+      auto cstatus = fc::raw::unpack<memory_db::chain_status>(data);
+      return cstatus.emergency;
+    }
+
     void check_action(vector<action>& actions)
     {
         FC_ASSERT(actions.size() == 1, "action size not equal 1");
-        for (int i = 0; i < actions.size(); i++) {
-            action _a = actions.at(i) ;
-            FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
+        action _a = actions.at(0) ;
+        FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
 
-            if ( "transfer" == _a.name.to_string() ) {
+        FC_ASSERT((check_chainstatus() == false ||
+                  (check_chainstatus() == true && _a.name.to_string() == "setemergency") ||
+                  (check_chainstatus() == true && _a.name.to_string() == "onblock") ||
+                  (check_chainstatus() == true && _a.name.to_string() == "onfee")),
+                  "chain is in emergency now !");
 
-                FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
-                auto _v = fc::raw::unpack<tmp_transfer >(_a.data);
-                ilog("transfer memo is : ${mem}", ("mem", _v.memo));
-                FC_ASSERT(_v.memo.length() < 257, "action bytes too large!");
-            }
+        if ( "transfer" == _a.name.to_string() ) {
+          FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
+          auto _v = fc::raw::unpack<tmp_transfer >(_a.data);
+          ilog("transfer memo is : ${mem}", ("mem", _v.memo));
+          FC_ASSERT(_v.memo.length() < 256, "action bytes too large!");
         }
      }
 
