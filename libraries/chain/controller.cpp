@@ -752,17 +752,11 @@ struct controller_impl {
 
     bool check_chainstatus(){
       const auto * cstatus_tid = db.find<table_id_object, by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
-      if(cstatus_tid == nullptr){
-        elog("get chainstatus fatal: cstatus_tid == nullptr");
-        return true;
-      }
+      FC_ASSERT((cstatus_tid != nullptr),"get chainstatus fatal");
 
       const auto &idx = db.get_index<key_value_index, by_scope_primary>();
       auto it = idx.lower_bound(boost::make_tuple(cstatus_tid->id, N(chainstatus)));
-      if (it == idx.end()) {
-        elog("get chainstatus fatal: it == idx.end()");
-        return true;
-      }
+      FC_ASSERT((it != idx.end()),"get chainstatus fatal");
 
       vector<char> data(it->value.size());
       memcpy(data.data(),it->value.data(),it->value.size());
