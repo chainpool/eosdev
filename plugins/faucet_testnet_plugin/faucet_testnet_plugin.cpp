@@ -242,7 +242,8 @@ struct faucet_testnet_plugin_impl {
       fc::variant pretty_output;
 
       try {
-         auto trx_trace_ptr = app().get_method<incoming::methods::transaction_sync>()(std::make_shared<packed_transaction>(packed_trx), true);
+         app().get_method<incoming::methods::transaction_async>()(std::make_shared<packed_transaction>(packed_trx), true, [](const auto&){});
+         auto trx_trace_ptr = cc.push_transaction(std::make_shared<transaction_metadata>(packed_trx), fc::time_point::maximum(), 0);
          pretty_output = cc.to_variant_with_abi( *trx_trace_ptr );;
       } catch (const account_name_exists_exception& ) {
          // another transaction ended up adding the account, so look for alternates
