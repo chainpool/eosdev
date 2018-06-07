@@ -40,7 +40,19 @@ namespace eosio { namespace chain {
        asset                            quantity;
        string                           memo;
    };
-
+   struct tmp_vote {
+       account_name                     voter;
+       account_name                     bpname;
+       asset                            change;
+   };
+   struct tmp_claim {
+       account_name                     voter;
+       account_name                     bpname;
+   };
+   struct tmp_unfreeze {
+       account_name                     voter;
+       account_name                     bpname;
+    };
    class controller {
       public:
          struct config {
@@ -240,6 +252,9 @@ namespace eosio { namespace chain {
 } }  /// eosio::chain
 
 FC_REFLECT( eosio::chain::tmp_transfer, (from)(to)(quantity)(memo) )
+FC_REFLECT( eosio::chain::tmp_vote, (voter)(bpname)(change) )
+FC_REFLECT( eosio::chain::tmp_claim, (voter)(bpname) )
+FC_REFLECT( eosio::chain::tmp_unfreeze, (voter)(bpname))
 
 FC_REFLECT( eosio::chain::controller::config,
             (actor_whitelist)

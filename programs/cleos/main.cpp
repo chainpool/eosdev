@@ -1845,8 +1845,10 @@ int main( int argc, char** argv ) {
    bool prettyact = false;
    bool printconsole = false;
 
-   int32_t pos_seq = -1;
-   int32_t offset = -20;
+//   int32_t pos_seq = -1;
+//   int32_t offset = -20;
+   int32_t pos_seq = 0;
+   int32_t offset = 0;
    auto getActions = get->add_subcommand("actions", localized("Retrieve all actions with specific account name referenced in authorization or receiver"), false);
    getActions->add_option("account_name", account_name, localized("name of account to query on"))->required();
    getActions->add_option("pos", pos_seq, localized("sequence number of action for this account, -1 for last"));
