@@ -121,7 +121,10 @@ namespace eosio {
          });
       }
    }
-
+   bool GreaterSort (history_apis::read_only::ordered_action_result a,history_apis::read_only::ordered_action_result b)
+   {
+       return (a.global_action_seq > b.global_action_seq);
+    }
    struct filter_entry {
       name receiver;
       name action;
@@ -365,6 +368,7 @@ namespace eosio {
 
 
    namespace history_apis {
+   /*
       read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
         //edump((params));
         auto& chain = history->chain_plug->chain();
@@ -432,8 +436,168 @@ namespace eosio {
         }
         return result;
       }
+*/
+      read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
+          //edump((params));
+          auto& chain = history->chain_plug->chain();
+          const auto& db = chain.db();
+
+          const auto& idx = db.get_index<account_history_index, by_account_action_seq>();
+          int32_t start_parm = *params.pos;
+          int32_t offset_parm = *params.offset;
+          int32_t start = 0;
+          //int32_t pos = params.pos ? *params.pos : -1;
+          int32_t pos = -1;
+          int32_t end = 0;
+          //int32_t offset = params.offset ? *params.offset : -20;
+          int32_t offset =-134217720;//-10000000;
+          auto index_account_name = params.account_name;
+          chain::account_name n = N(eosio);
+          //edump((pos));
+          if( pos == -1 ) {
+              auto itr = idx.lower_bound( boost::make_tuple( name(n.value+1), 0 ) );
+              if( itr == idx.begin() ) {
+                 if( itr->account == n )
+                    pos = itr->account_sequence_num+1;
+              } else if( itr != idx.begin() ) --itr;
+
+              if( itr->account == n )
+                 pos = itr->account_sequence_num + 1;
+          }
+          get_actions_result result;
+           if(chain.pending_block_state()->block_num < start_parm)
+           {
+               return result;
+           }
+          if( pos== -1 ) pos = 0xfffffff;
+
+          if( offset > 0 ) {
+             start = pos;
+             end   = start + offset;
+          } else {
+             start = pos + offset;
+             if( start > pos ) start = 0;
+             end   = pos;
+          }
+          FC_ASSERT( end >= start );
 
 
+          //edump((start)(end));
+          auto start_itr = idx.lower_bound( boost::make_tuple( n, start ) );
+          if(start_itr == idx.end())
+          {
+              return result;
+          }
+          auto end_itr = idx.lower_bound( boost::make_tuple( n, end+1) );
+          if(start_itr == end_itr)
+          {
+              return result;
+          }
+
+          auto start_time = fc::time_point::now();
+          auto end_time = start_time;
+          bool action_flag=false;
+          result.last_irreversible_block = chain.last_irreversible_block_num();
+          while( start_itr != end_itr )
+          {
+              if(start_itr ==idx.end())
+              {
+                  break;
+              }
+             const auto& a = db.get<action_history_object, by_action_sequence_num>( start_itr->action_sequence_num );
+             fc::datastream<const char*> ds( a.packed_action_trace.data(), a.packed_action_trace.size() );
+             action_trace t;
+             fc::raw::unpack( ds, t );
+             if(t.act.name != N(onfee) )
+             {
+                 if(t.act.authorization[0].actor==index_account_name)
+                 {
+                     action_flag=true;
+                 }
+                 else if((t.act.name == N(transfer)))
+                 {
+                     auto data = fc::raw::unpack<tmp_transfer >(t.act.data);
+                     if(((data.from == index_account_name)||(data.to == index_account_name)))
+                     {
+                         action_flag=true;
+                     }
+                     else
+                     {
+                         continue;
+                     }
+                 }
+                 else if(t.act.name == N(vote))
+                 {
+                     auto data = fc::raw::unpack<tmp_vote >(t.act.data);
+                     if((data.bpname == index_account_name)||(data.voter == index_account_name))
+                     {
+                         action_flag=true;
+                     }
+                     else
+                     {
+                         continue;
+                     }
+                 }
+                 else if(t.act.name == N(unfreeze))
+                 {
+                     auto data = fc::raw::unpack<tmp_unfreeze >(t.act.data);
+                     if((data.bpname == index_account_name)||(data.voter == index_account_name))
+                     {
+                         action_flag=true;
+                     }
+                     else
+                     {
+                         continue;
+                     }
+                 }
+                 else if(t.act.name == N(claim))
+                 {
+                     auto data = fc::raw::unpack<tmp_claim >(t.act.data);
+                     if((data.bpname == index_account_name)||(data.voter == index_account_name))
+                     {
+                         action_flag=true;
+                     }
+                     else
+                     {
+                         continue;
+                     }
+                 }
+
+                 if(action_flag)
+                 {
+                     if(start_parm!=0)
+                     {
+                         start_parm--;
+                         ++start_itr;
+                         action_flag = false;
+                         continue;
+                     }
+                     if(offset_parm==0)
+                     {
+                         break;
+                     }
+                     result.actions.emplace_back( ordered_action_result{
+                                           start_itr->action_sequence_num,
+                                           start_itr->account_sequence_num,
+                                           a.block_num, a.block_time,
+                                           chain.to_variant_with_abi(t)
+                                           });
+
+                     end_time = fc::time_point::now();
+                     if( end_time - start_time > fc::microseconds(100000) ) {
+                        result.time_limit_exceeded_error = true;
+                        break;
+                     }
+                     offset_parm--;
+                 }
+
+             }
+             action_flag = false;
+             ++start_itr;
+          }
+          std::sort(result.actions.begin(),result.actions.end(),GreaterSort);
+          return result;
+      }
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
          auto& chain = history->chain_plug->chain();
 
