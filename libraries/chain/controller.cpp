@@ -382,7 +382,8 @@ struct controller_impl {
          obj.name = name;
          obj.producer_key = public_key;
          obj.commission_rate = producer.commission_rate;
-         obj.voteage_update_time = conf.genesis.initial_timestamp;
+         obj.total_staked = 0;
+         obj.voteage_update_height = 0;
          obj.total_voteage = 0;
          obj.emergency = false;
          auto pk = obj.primary_key();
