@@ -351,6 +351,22 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
    FC_ASSERT( fc::exists( abiPath ), "no abi file found ");
    auto abi = fc::json::from_file(abiPath).as<abi_def>();
    my->chain_config->genesis.abi = fc::raw::pack(abi);
+
+   auto tokenWastPath = app().config_dir() / "eosio.token.wasm";
+   std::string tokenWast;
+   fc::read_file_contents(tokenWastPath, tokenWast);
+   FC_ASSERT(!tokenWast.empty(), "no wast file found ");
+   if(tokenWast.compare(0, 4, binary_wasm_header) == 0) {
+       my->chain_config->genesis.token_code = bytes(tokenWast.begin(), tokenWast.end());
+   }
+   else {
+       FC_ASSERT("not support this wast");
+   }
+   auto tokenAbiPath = app().config_dir() / "eosio.token.abi";
+   FC_ASSERT( fc::exists( tokenAbiPath ), "no abi file found ");
+   auto tokenAbi = fc::json::from_file(tokenAbiPath).as<abi_def>();
+   my->chain_config->genesis.token_abi = fc::raw::pack(tokenAbi);
+
    //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
    if( options.count("genesis-json") ) {
       FC_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ), "Genesis state can only be set on a fresh blockchain." );
