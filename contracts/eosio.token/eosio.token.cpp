@@ -10,12 +10,13 @@ namespace eosio {
 void token::create( account_name issuer,
                     asset        maximum_supply )
 {
-    require_auth( _self );
+//    require_auth( _self );
 
     auto sym = maximum_supply.symbol;
     eosio_assert( sym.is_valid(), "invalid symbol name" );
     eosio_assert( maximum_supply.is_valid(), "invalid supply");
     eosio_assert( maximum_supply.amount > 0, "max-supply must be positive");
+    eosio_assert( sym.name() != N(EOS), "not create EOS");
 
     stats statstable( _self, sym.name() );
     auto existing = statstable.find( sym.name() );
