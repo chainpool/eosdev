@@ -534,7 +534,7 @@ struct controller_impl {
 
       authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
-      create_native_account( N(token), system_auth, system_auth, false );
+      create_native_account( N(eosio.token), system_auth, system_auth, false );
       initialize_code(conf.genesis.code);
       initialize_abi(conf.genesis.abi);
       initialize_token(conf.genesis.token_code, conf.genesis.token_abi);
