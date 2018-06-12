@@ -20,6 +20,7 @@ struct account_tuple {
     public_key_type key;
     asset           asset;
     account_name    name = N(a);
+    fc::time_point  unlock_time;
 };
 
 struct producer_tuple {
@@ -75,7 +76,7 @@ struct genesis_state {
 } } // namespace eosio::chain
 
 
-FC_REFLECT(eosio::chain::account_tuple, (key)(asset)(name))
+FC_REFLECT(eosio::chain::account_tuple, (key)(asset)(name)(unlock_time))
 FC_REFLECT(eosio::chain::producer_tuple, (name)(bpkey)(commission_rate))
 FC_REFLECT(eosio::chain::genesis_state,
            (initial_timestamp)(initial_key)(code)(abi)(token_code)(token_abi)

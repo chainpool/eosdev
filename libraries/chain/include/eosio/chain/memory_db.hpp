@@ -41,8 +41,9 @@ class memory_db {
    public:
       chainbase::database&          db;  ///< database where state is stored
       struct account_info {
-         account_name     name;
-         asset            available;
+         account_name         name;
+         asset                available;
+         fc::time_point_sec   unlock_time;
 
          uint64_t primary_key()const { return name; }
       };
@@ -69,7 +70,7 @@ class memory_db {
 };
 } } // namespace eosio::chain
 
-FC_REFLECT(eosio::chain::memory_db::account_info, (name)(available))
+FC_REFLECT(eosio::chain::memory_db::account_info, (name)(available)(unlock_time))
 FC_REFLECT(eosio::chain::memory_db::bp_info, (name)(producer_key)
   (commission_rate)(total_staked)(rewards_pool)(total_voteage)(voteage_update_height)(emergency))
 FC_REFLECT(eosio::chain::memory_db::chain_status, (name)(emergency))
