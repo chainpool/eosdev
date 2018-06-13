@@ -318,30 +318,28 @@ public:
          }
       }
 
-//Convert the table_key string to the uint64_t.
-      uint64_t t_key = 0;
-      try {
-         name k(p.table_key);
-         t_key = k.value;
-      } catch( ... ) {
-         try {
-            auto trimmed_key_str = p.table_key;
-            boost::trim(trimmed_key_str);
-            t_key = boost::lexical_cast<uint64_t>(trimmed_key_str.c_str(), trimmed_key_str.size());
-         } catch( ... ) {
-            try {
-               auto symb = eosio::chain::symbol::from_string(p.table_key);
-               t_key = symb.value();
-            } catch( ... ) {
-               try {
-                  t_key = ( eosio::chain::string_to_symbol( 0, p.table_key.c_str() ) >> 8 );
-               } catch( ... ) {
-                  FC_ASSERT( false, "could not convert table_key string to any of the following: uint64_t, valid name, or valid symbol (with or without the precision)" );
-               }
-            }
-         }
+//Convert the table_key string to the uint64_t. can't supprot combination key
+
+      string key_type;
+      for ( auto t : abi.tables ) {
+        if ( t.name == p.table ) {
+          key_type = t.key_types[0];
+        }
       }
 
+      uint64_t t_key = 0;
+      try {
+        if ( key_type == "account_name" || key_type == "name" ) {
+          name k(p.table_key);
+          t_key = k.value;
+        } else if ( key_type == "uint64" && p.table_key != "" ) {
+          auto trimmed_key_str = p.table_key;
+          boost::trim(trimmed_key_str);
+          t_key = boost::lexical_cast<uint64_t>(trimmed_key_str.c_str(), trimmed_key_str.size());
+        }
+      } catch( ... ) {
+        FC_ASSERT( false, "could not convert table_key string to any of the following: valid account_name, uint64_t" );
+      }
 
       abi_serializer abis;
       abis.set_abi(abi);
