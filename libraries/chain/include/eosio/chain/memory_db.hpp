@@ -56,6 +56,7 @@ class memory_db {
          asset            rewards_pool;
          int64_t          total_voteage;
          uint32_t         voteage_update_height;
+         std::string      url;
          bool             emergency;
 
          uint64_t primary_key() const { return name; }
@@ -72,6 +73,6 @@ class memory_db {
 
 FC_REFLECT(eosio::chain::memory_db::account_info, (name)(available)(unlock_time))
 FC_REFLECT(eosio::chain::memory_db::bp_info, (name)(producer_key)
-  (commission_rate)(total_staked)(rewards_pool)(total_voteage)(voteage_update_height)(emergency))
+  (commission_rate)(total_staked)(rewards_pool)(total_voteage)(voteage_update_height)(url)(emergency))
 FC_REFLECT(eosio::chain::memory_db::chain_status, (name)(emergency))
 
