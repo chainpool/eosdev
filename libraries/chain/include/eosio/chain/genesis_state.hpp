@@ -27,6 +27,7 @@ struct producer_tuple {
     account_name name;
     public_key_type bpkey;
     uint32_t commission_rate;
+    std::string url;
 };
 
 struct genesis_state {
@@ -77,7 +78,7 @@ struct genesis_state {
 
 
 FC_REFLECT(eosio::chain::account_tuple, (key)(asset)(name)(unlock_time))
-FC_REFLECT(eosio::chain::producer_tuple, (name)(bpkey)(commission_rate))
+FC_REFLECT(eosio::chain::producer_tuple, (name)(bpkey)(commission_rate)(url))
 FC_REFLECT(eosio::chain::genesis_state,
            (initial_timestamp)(initial_key)(code)(abi)(token_code)(token_abi)
            (initial_configuration)(initial_account_list)(initial_producer_list))
