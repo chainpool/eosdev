@@ -897,7 +897,9 @@ struct controller_impl {
             } catch (const fc::exception &e) {
               trace->except = e;
               trace->except_ptr = std::current_exception();
-              ilog("---trnasction exe failed--------trace: ${trace}", ("trace", trace));
+              if (head->block_num != 1) {
+                ilog("---trnasction exe failed--------trace: ${trace}", ("trace", trace));
+              }
             }
 
             auto restore = make_block_restore_point();
