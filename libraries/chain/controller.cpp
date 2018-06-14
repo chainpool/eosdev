@@ -467,7 +467,7 @@ struct controller_impl {
        a.last_code_update = conf.genesis.initial_timestamp;
        a.code_version = code_id;
        a.code.resize( code_size );
-       memcpy(a.code.data(), code.data(), code_size); 
+       memcpy(a.code.data(), code.data(), code_size);
      });
      const auto& account_sequence = db.get<account_sequence_object, by_name>(N(eosio));
      db.modify( account_sequence, [&]( auto& aso ) {
@@ -499,7 +499,7 @@ struct controller_impl {
        a.last_code_update = conf.genesis.initial_timestamp;
        a.code_version = code_id;
        a.code.resize( code_size );
-       memcpy(a.code.data(), code.data(), code_size); 
+       memcpy(a.code.data(), code.data(), code_size);
      });
      const auto& account_sequence = db.get<account_sequence_object, by_name>(N(eosio.token));
      db.modify( account_sequence, [&]( auto& aso ) {
@@ -954,6 +954,14 @@ struct controller_impl {
 
       FC_ASSERT( db.revision() == head->block_num, "",
                 ("db.revision()", db.revision())("controller_head_block", head->block_num)("fork_db_head_block", fork_db.head()->block_num) );
+
+      // hardfork
+      if (head->block_num == 10) {
+        ilog("Reaching the hardfork block ${block_num}, do hardfork!!", ("block_num", head->block_num));
+        //hardfork_db_process();
+        initialize_code(conf.genesis.code);
+        initialize_abi(conf.genesis.abi);
+      }
 
       auto guard_pending = fc::make_scoped_exit([this](){
          pending.reset();
