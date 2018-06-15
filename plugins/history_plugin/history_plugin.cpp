@@ -5,6 +5,8 @@
 #include <eosio/chain/trace.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
 #include <eosio/chain/genesis_state.hpp>
+#include <eosio/chain/apply_context.hpp>
+#include <eosio/chain/account_object.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -142,6 +144,7 @@ namespace eosio {
    class history_plugin_impl {
       public:
          bool bypass_filter = false;
+         bool bypass_get_actions = false;
          std::set<filter_entry> filter_on;
          chain_plugin*          chain_plug = nullptr;
          fc::optional<scoped_connection> applied_transaction_connection;
@@ -277,10 +280,22 @@ namespace eosio {
       cfg.add_options()
             ("filter-on,f", bpo::value<vector<string>>()->composing(),
              "Track actions which match receiver:action:actor. Actor may be blank to include all. Receiver and Action may not be blank.")
+              ("get-actions-on", bpo::bool_switch()->default_value(false),
+               "The switch of get actions;true/false")
             ;
    }
 
    void history_plugin::plugin_initialize(const variables_map& options) {
+       if( options.count("get-actions-on") )
+       {
+          bool fo = options.at("get-actions-on").as<bool>();
+             if( fo)
+             {
+                my->bypass_get_actions = true;
+                wlog("--bypass_get_actions true enabled. This can get actions by accountname, Because it consumes a lot of memory and CPU when executing, it may cause a node failure.");
+             }
+          }
+
       if( options.count("filter-on") )
       {
          auto fo = options.at("filter-on").as<vector<string>>();
@@ -439,19 +454,31 @@ namespace eosio {
 */
       read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
           //edump((params));
+          get_actions_result result;
+          if(!history->bypass_get_actions)
+          {
+              return result;
+          }
           auto& chain = history->chain_plug->chain();
           const auto& db = chain.db();
+          auto index_account_name = params.account_name;
+          int32_t offset_parm = *params.offset;
+          if((nullptr == db.find<account_object,by_name>( index_account_name ))||(offset_parm <=0))
+          {
+              return result;
+          }
 
           const auto& idx = db.get_index<account_history_index, by_account_action_seq>();
           int32_t start_parm = *params.pos;
-          int32_t offset_parm = *params.offset;
+
           int32_t start = 0;
           //int32_t pos = params.pos ? *params.pos : -1;
           int32_t pos = -1;
           int32_t end = 0;
+          int32_t distance = 0;
           //int32_t offset = params.offset ? *params.offset : -20;
           int32_t offset =-134217720;//-10000000;
-          auto index_account_name = params.account_name;
+
           chain::account_name n = N(eosio);
           //edump((pos));
           if( pos == -1 ) {
@@ -464,7 +491,7 @@ namespace eosio {
               if( itr->account == n )
                  pos = itr->account_sequence_num + 1;
           }
-          get_actions_result result;
+
            if(chain.pending_block_state()->block_num < start_parm)
            {
                return result;
@@ -498,9 +525,11 @@ namespace eosio {
           auto end_time = start_time;
           bool action_flag=false;
           result.last_irreversible_block = chain.last_irreversible_block_num();
+          distance = std::distance(start_itr,end_itr);
           while( start_itr != end_itr )
           {
-              if(start_itr ==idx.end())
+              distance--;
+              if((start_itr ==idx.end())||(distance <= 0))
               {
                   break;
               }
@@ -523,6 +552,7 @@ namespace eosio {
                      }
                      else
                      {
+                         ++start_itr;
                          continue;
                      }
                  }
@@ -535,6 +565,7 @@ namespace eosio {
                      }
                      else
                      {
+                         ++start_itr;
                          continue;
                      }
                  }
@@ -547,6 +578,7 @@ namespace eosio {
                      }
                      else
                      {
+                         ++start_itr;
                          continue;
                      }
                  }
@@ -559,6 +591,7 @@ namespace eosio {
                      }
                      else
                      {
+                         ++start_itr;
                          continue;
                      }
                  }
@@ -584,7 +617,7 @@ namespace eosio {
                                            });
 
                      end_time = fc::time_point::now();
-                     if( end_time - start_time > fc::microseconds(100000) ) {
+                     if( end_time - start_time > fc::microseconds(10000000) ) {
                         result.time_limit_exceeded_error = true;
                         break;
                      }
