@@ -824,10 +824,17 @@ struct controller_impl {
         FC_ASSERT((check_chainstatus() ? (_a.name.to_string() == "setemergency" || _a.name.to_string() == "onblock" || _a.name.to_string() == "onfee") : true),
                   "chain is in emergency now !" );
 
-        if ( "transfer" == _a.name.to_string() || "issue" == _a.name.to_string() ) {
+        if ( "transfer" == _a.name.to_string() ) {
           FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
-          auto _v = fc::raw::unpack<tmp_transfer >(_a.data);
+          auto _v =  fc::raw::unpack<tmp_transfer >(_a.data);
           ilog("transfer memo is : ${mem}", ("mem", _v.memo));
+          FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
+        }
+
+        if ( "issue" == _a.name.to_string() ) {
+          FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
+          auto _v = fc::raw::unpack<tmp_issue >(_a.data);
+          ilog("issue memo is : ${mem}", ("mem", _v.memo));
           FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
         }
      }
