@@ -71,7 +71,6 @@ void validate_authority_precondition( const apply_context& context, const author
       memory_db::account_info obj;
       obj.name = name;
       obj.available = asset(0);
-      obj.unlock_time = fc::time_point::now();
       bytes data = fc::raw::pack(obj);
       auto pk = obj.primary_key();
       memory_db db(cdb);

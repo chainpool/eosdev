@@ -402,15 +402,10 @@ struct controller_impl {
       db.db_store_i64(N(eosio), N(eosio), N(chainstatus), N(eosio), pk, data.data(), data.size() );
    }
 
-   void accounts_table(account_name name, asset balance, fc::time_point unlock_time) {
+   void accounts_table(account_name name, asset balance) {
       memory_db::account_info obj;
       obj.name = name;
       obj.available = balance;
-      if(unlock_time <= conf.genesis.initial_timestamp){
-         obj.unlock_time = conf.genesis.initial_timestamp;
-      }else{
-         obj.unlock_time = unlock_time;
-      }
 
       bytes data = fc::raw::pack(obj);
       auto pk = obj.primary_key();
@@ -453,7 +448,7 @@ struct controller_impl {
            ilog("---name:${name}, publickey: ${pb}, amount: ${amount}", ("name", namef.data())("pb", public_key)("amount", amount));
            acc_name = string_to_name(namef.data());
        }
-       accounts_table(acc_name, amount, account.unlock_time);
+       accounts_table(acc_name, amount);
        create_native_account(acc_name, auth, auth, false);
      }
    }
@@ -810,27 +805,11 @@ struct controller_impl {
       return cstatus.emergency;
     }
 
-    bool account_is_unlock(account_name name){
-       const auto * accounts_tid = db.find<table_id_object, by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(accounts)));
-       FC_ASSERT((accounts_tid != nullptr),"get accounts table fatal");
-
-       const auto &idx = db.get_index<key_value_index, by_scope_primary>();
-       auto it = idx.lower_bound(boost::make_tuple(accounts_tid->id, name));
-       FC_ASSERT((it != idx.end()),"get accounts table fatal");
-
-       vector<char> data(it->value.size());
-       memcpy(data.data(),it->value.data(),it->value.size());
-
-       auto account = fc::raw::unpack<memory_db::account_info>(data);
-       return account.unlock_time.sec_since_epoch() > fc::time_point::now().sec_since_epoch() ? false : true;
-    }
-
     void check_action(vector<action>& actions)
     {
         FC_ASSERT(actions.size() == 1, "action size not equal 1");
         action _a = actions.at(0) ;
         FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
-        FC_ASSERT(account_is_unlock(_a.authorization[0].actor) == true, "account is locking now");
         FC_ASSERT((check_chainstatus() ? (_a.name.to_string() == "setemergency" || _a.name.to_string() == "onblock" || _a.name.to_string() == "onfee") : true),
                   "chain is in emergency now !" );
 
