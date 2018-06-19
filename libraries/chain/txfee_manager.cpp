@@ -17,7 +17,7 @@ namespace eosio { namespace chain {
         fee_map[N(updatebp)]        = asset(100*10000);
         fee_map[N(setemergency)]    = asset(10*10000);
 
-        fee_map[N(issue)]           = asset(300);
+        fee_map[N(issue)]           = asset(100);
         fee_map[N(create)]          = asset(10*10000);
    }
 
