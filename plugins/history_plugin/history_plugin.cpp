@@ -611,9 +611,6 @@ namespace eosio {
               delete_end = result.actions.end();
               result.actions.erase(delete_begin,delete_end);
           }
-          else{
-              return result;
-          }
           return result;
       }
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
