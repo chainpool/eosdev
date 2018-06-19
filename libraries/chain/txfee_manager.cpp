@@ -11,13 +11,13 @@ namespace eosio { namespace chain {
    txfee_manager::txfee_manager(){
         fee_map[N(newaccount)]      = asset(1000);
         fee_map[N(transfer)]        = asset(100);
-        fee_map[N(vote)]            = asset(100);
+        fee_map[N(vote)]            = asset(500);
         fee_map[N(unfreeze)]        = asset(100);
-        fee_map[N(claim)]           = asset(100);
+        fee_map[N(claim)]           = asset(300);
         fee_map[N(updatebp)]        = asset(100*10000);
         fee_map[N(setemergency)]    = asset(10*10000);
 
-        fee_map[N(issue)]           = asset(100);
+        fee_map[N(issue)]           = asset(300);
         fee_map[N(create)]          = asset(10*10000);
    }
 
