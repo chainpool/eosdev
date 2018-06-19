@@ -826,9 +826,16 @@ struct controller_impl {
 
         if ( "transfer" == _a.name.to_string() ) {
           FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
-          auto _v = fc::raw::unpack<tmp_transfer >(_a.data);
+          auto _v =  fc::raw::unpack<tmp_transfer >(_a.data);
           ilog("transfer memo is : ${mem}", ("mem", _v.memo));
-          FC_ASSERT(_v.memo.length() < 256, "action bytes too large!");
+          FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
+        }
+
+        if ( "issue" == _a.name.to_string() ) {
+          FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
+          auto _v = fc::raw::unpack<tmp_issue >(_a.data);
+          ilog("issue memo is : ${mem}", ("mem", _v.memo));
+          FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
         }
      }
 

@@ -491,7 +491,6 @@ namespace eosio {
               if( itr->account == n )
                  pos = itr->account_sequence_num + 1;
           }
-
           if(chain.pending_block_state()->block_num < start_parm)
           {
               return result;
