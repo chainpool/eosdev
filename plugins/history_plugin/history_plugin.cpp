@@ -491,11 +491,10 @@ namespace eosio {
               if( itr->account == n )
                  pos = itr->account_sequence_num + 1;
           }
-
-           if(chain.pending_block_state()->block_num < start_parm)
-           {
-               return result;
-           }
+          if(chain.pending_block_state()->block_num < start_parm)
+          {
+              return result;
+          }
           if( pos== -1 ) pos = 0xfffffff;
 
           if( offset > 0 ) {
@@ -526,109 +525,95 @@ namespace eosio {
           bool action_flag=false;
           result.last_irreversible_block = chain.last_irreversible_block_num();
           distance = std::distance(start_itr,end_itr);
-          while( start_itr != end_itr )
-          {
+          while( start_itr != end_itr ) {
               distance--;
-              if((start_itr ==idx.end())||(distance <= 0))
-              {
+              if ((start_itr == idx.end()) || (distance <= 0)) {
                   break;
               }
-             const auto& a = db.get<action_history_object, by_action_sequence_num>( start_itr->action_sequence_num );
-             fc::datastream<const char*> ds( a.packed_action_trace.data(), a.packed_action_trace.size() );
-             action_trace t;
-             fc::raw::unpack( ds, t );
-             if(t.act.name != N(onfee) )
-             {
-                 if(t.act.authorization[0].actor==index_account_name)
-                 {
-                     action_flag=true;
-                 }
-                 else if((t.act.name == N(transfer)))
-                 {
-                     auto data = fc::raw::unpack<tmp_transfer >(t.act.data);
-                     if(((data.from == index_account_name)||(data.to == index_account_name)))
-                     {
-                         action_flag=true;
-                     }
-                     else
-                     {
-                         ++start_itr;
-                         continue;
-                     }
-                 }
-                 else if(t.act.name == N(vote))
-                 {
-                     auto data = fc::raw::unpack<tmp_vote >(t.act.data);
-                     if((data.bpname == index_account_name)||(data.voter == index_account_name))
-                     {
-                         action_flag=true;
-                     }
-                     else
-                     {
-                         ++start_itr;
-                         continue;
-                     }
-                 }
-                 else if(t.act.name == N(unfreeze))
-                 {
-                     auto data = fc::raw::unpack<tmp_unfreeze >(t.act.data);
-                     if((data.bpname == index_account_name)||(data.voter == index_account_name))
-                     {
-                         action_flag=true;
-                     }
-                     else
-                     {
-                         ++start_itr;
-                         continue;
-                     }
-                 }
-                 else if(t.act.name == N(claim))
-                 {
-                     auto data = fc::raw::unpack<tmp_claim >(t.act.data);
-                     if((data.bpname == index_account_name)||(data.voter == index_account_name))
-                     {
-                         action_flag=true;
-                     }
-                     else
-                     {
-                         ++start_itr;
-                         continue;
-                     }
-                 }
+              const auto &a = db.get<action_history_object, by_action_sequence_num>(start_itr->action_sequence_num);
+              fc::datastream<const char *> ds(a.packed_action_trace.data(), a.packed_action_trace.size());
+              action_trace t;
+              fc::raw::unpack(ds, t);
+              if (t.act.name != N(onfee)) {
+                  if (t.act.authorization[0].actor == index_account_name) {
+                      action_flag = true;
+                  } else if ((t.act.name == N(transfer))) {
+                      auto data = fc::raw::unpack<tmp_transfer>(t.act.data);
+                      if (((data.from == index_account_name) || (data.to == index_account_name))) {
+                          action_flag = true;
+                      } else {
+                          ++start_itr;
+                          continue;
+                      }
+                  } else if (t.act.name == N(vote)) {
+                      auto data = fc::raw::unpack<tmp_vote>(t.act.data);
+                      if ((data.bpname == index_account_name) || (data.voter == index_account_name)) {
+                          action_flag = true;
+                      } else {
+                          ++start_itr;
+                          continue;
+                      }
+                  } else if (t.act.name == N(unfreeze)) {
+                      auto data = fc::raw::unpack<tmp_unfreeze>(t.act.data);
+                      if ((data.bpname == index_account_name) || (data.voter == index_account_name)) {
+                          action_flag = true;
+                      } else {
+                          ++start_itr;
+                          continue;
+                      }
+                  } else if (t.act.name == N(claim)) {
+                      auto data = fc::raw::unpack<tmp_claim>(t.act.data);
+                      if ((data.bpname == index_account_name) || (data.voter == index_account_name)) {
+                          action_flag = true;
+                      } else {
+                          ++start_itr;
+                          continue;
+                      }
+                  }
+                  if (action_flag) {
 
-                 if(action_flag)
-                 {
-                     if(start_parm!=0)
-                     {
-                         start_parm--;
-                         ++start_itr;
-                         action_flag = false;
-                         continue;
-                     }
-                     if(offset_parm==0)
-                     {
-                         break;
-                     }
-                     result.actions.emplace_back( ordered_action_result{
-                                           start_itr->action_sequence_num,
-                                           start_itr->account_sequence_num,
-                                           a.block_num, a.block_time,
-                                           chain.to_variant_with_abi(t)
-                                           });
+                      result.actions.emplace_back(ordered_action_result{
+                              start_itr->action_sequence_num,
+                              start_itr->account_sequence_num,
+                              a.block_num, a.block_time,
+                              chain.to_variant_with_abi(t)
+                      });
 
-                     end_time = fc::time_point::now();
-                     if( end_time - start_time > fc::microseconds(10000000) ) {
-                        result.time_limit_exceeded_error = true;
-                        break;
-                     }
-                     offset_parm--;
-                 }
+                      end_time = fc::time_point::now();
+                      if (end_time - start_time > fc::microseconds(10000000)) {
+                          result.time_limit_exceeded_error = true;
+                          break;
+                      }
+                  }
 
-             }
-             action_flag = false;
-             ++start_itr;
+              }
+              action_flag = false;
+              ++start_itr;
+          }
+          if(start_parm>=result.actions.size())
+          {
+              result.actions.clear();
+              get_actions_result result_null;
+              return result_null;
           }
           std::sort(result.actions.begin(),result.actions.end(),GreaterSort);
+          vector<ordered_action_result>::const_iterator delete_begin;
+          vector<ordered_action_result>::const_iterator delete_end;
+          if(start_parm != 0)
+          {
+              delete_begin = result.actions.begin();
+              delete_end = result.actions.begin()+start_parm;
+              result.actions.erase(delete_begin,delete_end);
+          }
+          if(result.actions.size()>offset_parm)
+          {
+              delete_begin = result.actions.begin()+offset_parm;
+              delete_end = result.actions.end();
+              result.actions.erase(delete_begin,delete_end);
+          }
+          else{
+              return result;
+          }
           return result;
       }
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
