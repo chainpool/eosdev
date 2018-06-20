@@ -12,7 +12,7 @@ namespace eosio { namespace chain { namespace config {
 
 typedef __uint128_t uint128_t;
 
-const static auto block_max_tx_num        = 30;
+const static auto block_max_tx_num        = 300;
 
 const static auto default_blocks_dir_name    = "blocks";
 const static auto reversible_blocks_dir_name = "reversible";
