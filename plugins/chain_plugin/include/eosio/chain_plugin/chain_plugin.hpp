@@ -282,7 +282,7 @@ public:
    read_only::get_table_rows_result get_table_rows_ex( const read_only::get_table_rows_params& p, const abi_def& abi )const {
       read_only::get_table_rows_result result;
       const auto& d = db.db();
-
+      bool votes_flag=false;
       uint64_t scope = 0;
       try {
          name s(p.scope);
@@ -306,15 +306,19 @@ public:
          }
       }
 
-//Convert the table_key string to the uint64_t. can't supprot combination key
-
+      //Convert the table_key string to the uint64_t. can't supprot combination key
       string key_type;
       for ( auto t : abi.tables ) {
-        if ( t.name == p.table ) {
+        if ( t.name == p.table )
+        {
           key_type = t.key_types[0];
+          //if((p.table == N(votes))&&(p.votes_all))
+            if((p.table == N(votes)) && (0 == p.limit))
+          {
+              votes_flag =true;
+          }
         }
       }
-
       uint64_t t_key = 0;
       try {
         if ( key_type == "account_name" || key_type == "name" ) {
@@ -331,6 +335,80 @@ public:
 
       abi_serializer abis;
       abis.set_abi(abi);
+
+      if(votes_flag)
+      {
+          const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(accounts)));
+          if (t_id != nullptr)
+          {
+              const auto &idx = d.get_index<IndexType, Scope>();
+              decltype(t_id->id) next_tid(t_id->id._id + 1);
+              auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
+              auto upper = idx.lower_bound(boost::make_tuple(next_tid));
+
+              if (p.lower_bound.size()) {
+                  lower = idx.lower_bound(boost::make_tuple(t_id->id, fc::variant(
+                          p.lower_bound).as<typename IndexType::value_type::key_type>()));
+              }
+              if (p.upper_bound.size()) {
+                  upper = idx.lower_bound(boost::make_tuple(t_id->id, fc::variant(
+                          p.upper_bound).as<typename IndexType::value_type::key_type>()));
+              }
+
+              vector<char> data;
+
+              auto end = fc::time_point::now() + fc::microseconds(1000 * 100000); /// 100000ms max time
+
+              auto itr = lower;
+              fc::variant account_info;
+              for (itr = lower; itr != upper; ++itr)
+              {
+                  copy_inline_row(*itr, data);
+
+                  account_info = abis.binary_to_variant(abis.get_table_type(N(accounts)), data);
+                  //chain::table_name  name = account_info["name"];
+                  string  name = account_info["name"].as_string();
+                  wlog("--------------${name}",("name",name));
+                  const auto *t_id_v = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(N(eosio),eosio::chain::string_to_name(name.c_str()), N(votes)));
+                  if (t_id_v != nullptr)
+                  {
+                      const auto &idx = d.get_index<IndexType, Scope>();
+                      decltype(t_id_v->id) next_tid(t_id_v->id._id + 1);
+                      auto lower_v = idx.lower_bound(boost::make_tuple(t_id_v->id));
+                      auto upper_v = idx.lower_bound(boost::make_tuple(next_tid));
+                      if (p.lower_bound.size()) {
+                          lower_v = idx.lower_bound(boost::make_tuple(t_id_v->id, fc::variant(p.lower_bound).as<typename IndexType::value_type::key_type>()));
+                      }
+                      if (p.upper_bound.size()) {
+                          upper_v = idx.lower_bound(boost::make_tuple(t_id_v->id, fc::variant(p.upper_bound).as<typename IndexType::value_type::key_type>()));
+                      }
+                      //auto end = fc::time_point::now() + fc::microseconds(1000 * 1000); /// 1000ms max time
+                      auto itr_v = lower_v;
+                      fc::variant data_variant;
+                      std::map<std::string,fc::variant> map_vote;
+                      for (itr_v = lower_v; itr_v != upper_v; ++itr_v)
+                      {
+                          copy_inline_row(*itr_v, data);
+                          data_variant = abis.binary_to_variant(abis.get_table_type(N(votes)), data);
+                          map_vote.insert(std::pair<std::string,fc::variant>(name,data_variant));
+                          //fc::to_variant(map_vote,vote_info);
+                          if (fc::time_point::now() > end)
+                          {
+                             break;
+                          }
+                      }
+                      if(map_vote.size()>0)
+                        result.rows.emplace_back(map_vote);
+                      if (fc::time_point::now() > end)
+                      {
+                          break;
+                      }
+                  }
+              }
+          }
+          return result;
+      }
+
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
 //Return only rows that contain key.
       if((!p.table_key.empty())&&(t_id != nullptr))
@@ -389,7 +467,9 @@ public:
              auto itr = lower;
              for (itr = lower; itr != upper; ++itr) {
                 copy_inline_row(*itr, data);
-
+                 fc::variant account_info = abis.binary_to_variant(abis.get_table_type(N(accounts)), data);
+                 wlog("account_info:${account_info}",("account_info",account_info));
+                 wlog("account_info:${account_info}",("account_info",account_info["name"]));
                 if (p.json) {
                    result.rows.emplace_back(abis.binary_to_variant(abis.get_table_type(p.table), data));
                 } else {
