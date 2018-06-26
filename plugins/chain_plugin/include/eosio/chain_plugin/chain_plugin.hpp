@@ -410,7 +410,7 @@ public:
       }
 
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
-//Return only rows that contain key.
+      //Return only rows that contain key.
       if((!p.table_key.empty())&&(t_id != nullptr))
       {
           vector<char> data;
@@ -467,9 +467,6 @@ public:
              auto itr = lower;
              for (itr = lower; itr != upper; ++itr) {
                 copy_inline_row(*itr, data);
-                 fc::variant account_info = abis.binary_to_variant(abis.get_table_type(N(accounts)), data);
-                 wlog("account_info:${account_info}",("account_info",account_info));
-                 wlog("account_info:${account_info}",("account_info",account_info["name"]));
                 if (p.json) {
                    result.rows.emplace_back(abis.binary_to_variant(abis.get_table_type(p.table), data));
                 } else {
