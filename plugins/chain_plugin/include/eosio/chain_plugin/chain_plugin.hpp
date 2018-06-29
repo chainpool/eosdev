@@ -299,9 +299,6 @@ public:
       const auto& d = db.db();
 
       uint64_t scope = convert_to_type<uint64_t>(p.scope, "scope");
-
-//Convert the table_key string to the uint64_t. can't supprot combination key
-
       string key_type;
       for ( auto t : abi.tables ) {
         if ( t.name == p.table ) {
@@ -309,26 +306,13 @@ public:
         }
       }
 
-      uint64_t t_key = 0;
-      try {
-        if ( key_type == "account_name" || key_type == "name" ) {
-          name k(p.table_key);
-          t_key = k.value;
-        } else if ( key_type == "uint64" && p.table_key != "" ) {
-          auto trimmed_key_str = p.table_key;
-          // boost::trim(trimmed_key_str);
-          t_key = boost::lexical_cast<uint64_t>(trimmed_key_str.c_str(), trimmed_key_str.size());
-        }
-      } catch( ... ) {
-        FC_ASSERT( false, "could not convert table_key string to any of the following: valid account_name, uint64_t" );
-      }
-
-      //abi_serializer abis;
-      //abis.set_abi(abi);
-      //const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
-//Return only rows that contain key.
+      abi_serializer abis;
+      abis.set_abi(abi);
+      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
+      //Return only rows that contain key.
       if((!p.table_key.empty())&&(t_id != nullptr))
       {
+          uint64_t t_key = convert_to_type<uint64_t>(p.table_key, "table_key");
           vector<char> data;
           const auto& idx = d.get_index<chain::key_value_index, chain::by_scope_primary>();
           decltype(t_id->id) next_tid(t_id->id._id + 1);
@@ -360,7 +344,8 @@ public:
              result.more = true;
           }
        }
-      else if (t_id != nullptr){
+      else if (t_id != nullptr)
+      {
              const auto &idx = d.get_index<IndexType, Scope>();
              decltype(t_id->id) next_tid(t_id->id._id + 1);
              auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
