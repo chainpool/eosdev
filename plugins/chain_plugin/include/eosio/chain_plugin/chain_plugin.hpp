@@ -16,6 +16,7 @@
 #include <eosio/chain/plugin_interface.hpp>
 
 #include <boost/container/flat_set.hpp>
+#include <boost/algorithm/string/detail/trim.hpp>
 
 #include <fc/static_variant.hpp>
 
@@ -334,16 +335,16 @@ public:
           t_key = k.value;
         } else if ( key_type == "uint64" && p.table_key != "" ) {
           auto trimmed_key_str = p.table_key;
-          boost::trim(trimmed_key_str);
+          // boost::trim(trimmed_key_str);
           t_key = boost::lexical_cast<uint64_t>(trimmed_key_str.c_str(), trimmed_key_str.size());
         }
       } catch( ... ) {
         FC_ASSERT( false, "could not convert table_key string to any of the following: valid account_name, uint64_t" );
       }
 
-      abi_serializer abis;
-      abis.set_abi(abi);
-      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
+      //abi_serializer abis;
+      //abis.set_abi(abi);
+      //const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
 //Return only rows that contain key.
       if((!p.table_key.empty())&&(t_id != nullptr))
       {
