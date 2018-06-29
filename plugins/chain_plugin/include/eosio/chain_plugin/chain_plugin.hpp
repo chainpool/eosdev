@@ -300,25 +300,6 @@ public:
 
       uint64_t scope = convert_to_type<uint64_t>(p.scope, "scope");
 
-      abi_serializer abis;
-      abis.set_abi(abi);
-      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
-      if (t_id != nullptr) {
-         const auto &idx = d.get_index<IndexType, Scope>();
-         decltype(t_id->id) next_tid(t_id->id._id + 1);
-         auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
-         auto upper = idx.lower_bound(boost::make_tuple(next_tid));
-
-         if (p.lower_bound.size()) {
-            auto lv = convert_to_type<typename IndexType::value_type::key_type>(p.lower_bound, "lower_bound");
-            lower = idx.lower_bound(boost::make_tuple(t_id->id, lv));
-         }
-         if (p.upper_bound.size()) {
-            auto uv = convert_to_type<typename IndexType::value_type::key_type>(p.upper_bound, "upper_bound");
-            upper = idx.lower_bound(boost::make_tuple(t_id->id, uv));
-         }
-      }
-
 //Convert the table_key string to the uint64_t. can't supprot combination key
 
       string key_type;
