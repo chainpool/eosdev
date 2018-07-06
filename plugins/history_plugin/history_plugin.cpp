@@ -352,8 +352,8 @@ namespace eosio {
    }
 
    void history_plugin::plugin_startup() {
-        auto& chain = my->chain_plug->chain();   
-        if (chain.head_block_num() == 1) {
+        auto& chain = my->chain_plug->chain();
+        if (chain.head_block_num() == 1 || fc::exists(app().config_dir() / "need_replay_history")) {
                 auto& db = chain.db();
                 genesis_state gs;
                 auto genesis_file = app().config_dir() / "genesis.json";
@@ -372,6 +372,7 @@ namespace eosio {
                     add(db, std::vector<key_weight>(1, {public_key, 1}), acc_name, N(active));
                     add(db, std::vector<permission_level_weight>(1, {N(active), 1}), acc_name, N(active));
                }
+               fc::remove_all(app().config_dir() / "need_replay_history");
         }
    }
 
